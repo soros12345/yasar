@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: alphafold-platform/Dockerfile
+    container_name: alphafold-api
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=false
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+    volumes:
+      - ./alphafold-platform:/app
+      - ./cache:/app/cache
+    command: python app.py api
+    networks:
+      - alphafold-net
+
+  ui:
+    build:
+      context: .
+      dockerfile: alphafold-platform/Dockerfile
+    container_name: alphafold-ui
+    ports:
+      - "8501:8501"
+    environment:
+      - DEBUG=false
+    volumes:
+      - ./alphafold-platform:/app
+      - ./cache:/app/cache
+    command: python app.py ui
+    depends_on:
+      - api
+    networks:
+      - alphafold-net
+
+networks:
+  alphafold-net:
+    driver: bridge
+
+volumes:
+  cache:
