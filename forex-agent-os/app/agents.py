@@ -29,13 +29,16 @@ class EnsembleEngine:
 
     def decide(self, m: MarketSnapshot) -> tuple[list[AgentSignal], TradeIntent | None]:
         signals = [a.analyze(m) for a in self.agents]
-        buy = sum(s.confidence for s in signals if s.side == Side.BUY)
-        sell = sum(s.confidence for s in signals if s.side == Side.SELL)
-        if max(buy, sell) < 0.65:
+        buys = [s for s in signals if s.side == Side.BUY]
+        sells = [s for s in signals if s.side == Side.SELL]
+        buy_score = sum(s.confidence for s in buys)
+        sell_score = sum(s.confidence for s in sells)
+        if max(buy_score, sell_score) < 0.65:
             return signals, None
 
-        side = Side.BUY if buy > sell else Side.SELL
-        confidence = min(0.95, max(buy, sell) / max(1, len(self.agents)))
+        side = Side.BUY if buy_score > sell_score else Side.SELL
+        directional = buys if side == Side.BUY else sells
+        confidence = min(0.95, sum(s.confidence for s in directional) / len(directional))
         entry = m.ask if side == Side.BUY else m.bid
         sl_distance = 1.5 * m.atr
         tp_distance = 2.5 * m.atr
