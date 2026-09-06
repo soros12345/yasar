@@ -1,0 +1,25 @@
+name: Forex Agent OS CI
+
+on:
+  push:
+    paths:
+      - 'forex-agent-os/**'
+      - '.github/workflows/forex-agent-os-ci.yml'
+  pull_request:
+    paths:
+      - 'forex-agent-os/**'
+      - '.github/workflows/forex-agent-os-ci.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: forex-agent-os
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - run: pytest -q
