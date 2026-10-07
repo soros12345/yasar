@@ -18,7 +18,7 @@ def test_liveness():
     body = r.json()
     assert body["status"] == "ok"
     assert body["service"] == "api"
-    assert body["phase"] == "V1A-0"
+    assert body["phase"] == "V1A-1"
     assert body["environment"]
 
 

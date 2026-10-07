@@ -21,7 +21,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="RevenueOS API",
         version=settings.app_version,
-        description="RevenueOS / AffiliateOS — V1A-0 bootstrap API",
+        description="RevenueOS / AffiliateOS — V1A-1 API (bootstrap + multi-tenant security)",
         contact={"name": "RevenueOS"},
     )
     app.add_middleware(CorrelationIdMiddleware)
