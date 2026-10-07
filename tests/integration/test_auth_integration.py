@@ -351,6 +351,10 @@ def test_openapi_path_inventory(world):
         "/api/v1/auth/login", "/api/v1/auth/logout", "/api/v1/auth/me",
         "/api/v1/tenant", "/api/v1/tenants/{tenant_id}",
         "/api/v1/users", "/api/v1/sessions",
+        # V1A-2 financial surface
+        "/api/v1/ledger/accounts", "/api/v1/ledger/entries",
+        "/api/v1/ledger/entries/{entry_id}", "/api/v1/ledger/balances",
+        "/api/v1/provider-events/usage", "/api/v1/provider-events/cost",
     }
     assert paths == expected, f"route inventory changed: {paths ^ expected}"
 
@@ -365,6 +369,25 @@ def test_every_protected_route_rejects_missing_token(world):
         ("POST", "/api/v1/users",
          {"email": "p@x.y", "display_name": "P", "password": PASSWORD, "role": "VIEWER"}),
         ("GET", "/api/v1/sessions", None),
+        # V1A-2 financial surface
+        ("GET", "/api/v1/ledger/accounts", None),
+        ("POST", "/api/v1/ledger/accounts",
+         {"code": "X", "name": "X", "kind": "ASSET", "currency": "USD"}),
+        ("GET", "/api/v1/ledger/entries", None),
+        ("POST", "/api/v1/ledger/entries",
+         {"currency": "USD", "description": "x", "idempotency_key": "x",
+          "lines": [{"account_code": "A", "side": "DEBIT", "amount": "1.00"},
+                    {"account_code": "B", "side": "CREDIT", "amount": "1.00"}]}),
+        ("GET", "/api/v1/ledger/entries/some-id", None),
+        ("GET", "/api/v1/ledger/balances", None),
+        ("GET", "/api/v1/provider-events/usage", None),
+        ("POST", "/api/v1/provider-events/usage",
+         {"provider_id": "p", "occurred_at": "2026-10-07T00:00:00Z",
+          "quantity": "1", "unit": "request"}),
+        ("GET", "/api/v1/provider-events/cost", None),
+        ("POST", "/api/v1/provider-events/cost",
+         {"provider_id": "p", "occurred_at": "2026-10-07T00:00:00Z",
+          "amount": "1.00", "currency": "USD", "cost_type": "api_call"}),
     ]
     for method, path, body in probes:
         r = httpx.request(method, f"{BASE}{path}", json=body, timeout=TIMEOUT)

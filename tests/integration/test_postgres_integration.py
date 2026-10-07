@@ -16,6 +16,11 @@ EXPECTED_TABLES = {
     "users",
     "user_sessions",
     "casbin_rule",
+    "ledger_accounts",
+    "ledger_journal_entries",
+    "ledger_journal_lines",
+    "provider_usage_event",
+    "provider_cost_event",
     "alembic_version",
 }
 
@@ -29,7 +34,7 @@ def test_database_connection():
 def test_migrations_applied_and_current():
     with get_engine().connect() as conn:
         version = conn.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-    assert version == "0002_multitenant_security"
+    assert version == "0003_financial_core"
 
 
 def test_exact_schema_inventory():

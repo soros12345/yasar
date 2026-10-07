@@ -4,6 +4,7 @@
 |---|---|---|
 | V1A-0 | Bootstrap | **PASS** (2026-10-07) — see `docs/v1a-0-acceptance-report.md` |
 | V1A-1 | Multi-Tenancy Security | **PASS** (2026-10-07) — see `docs/v1a-1-acceptance-report.md` |
+| V1A-2 | Financial Core | **PASS** (2026-10-07) — see `docs/v1a-2-acceptance-report.md` |
 | V1A-2..V1A-9, V1B-*, V1C-* | ... | NOT STARTED (directories exist as forward-compatible placeholders; runtime activation forbidden) |
 
 ## V1A-0 delivered
@@ -20,6 +21,14 @@
   components) with API/DB/worker/scheduler status, environment and build info
 - 52 tests (27 unit, 25 integration), security scans, four manifests,
   native start/stop/restart scripts
+
+## V1A-2 delivered
+
+- `revenueos-money`: float-free exact Money + ISO 4217 exponent registry
+- CanonicalFinancialLedger: accounts + append-only double-entry journal (DB triggers),
+  mandatory idempotency, balanced posting with post-write re-read reconciliation
+- `provider_usage_event` / `provider_cost_event` ingestion contract (RevenueOS-owned, §28)
+- Migration `0003_financial_core`; 122 tests passing
 
 ## V1A-1 delivered
 

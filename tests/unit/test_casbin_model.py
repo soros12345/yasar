@@ -59,5 +59,5 @@ def test_default_role_policies_shape():
     assert roles == set(ROLES), "authorization roles must mirror identity roles"
     for _role, placeholder, obj, act in DEFAULT_ROLE_POLICIES:
         assert placeholder == "*"
-        assert obj in ("*", "tenant", "user", "session")
+        assert obj in ("*", "tenant", "user", "session", "ledger_account", "journal_entry", "provider_event")
         assert act in ("*", "read", "write")

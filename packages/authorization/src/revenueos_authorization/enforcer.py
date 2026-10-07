@@ -1,10 +1,11 @@
 """Casbin enforcer factory + RevenueOS policy content.
 
-V1A-1 authorization rules (domain = tenant id):
+V1A-2 authorization rules (domain = tenant id):
 
-  TENANT_ADMIN  user:read/write, tenant:read, session:read  (obj "*" / act "*")
-  OPERATOR      user:read, tenant:read, session:read
-  VIEWER        user:read, tenant:read
+  TENANT_ADMIN  everything in own domain (obj "*" / act "*")
+  OPERATOR      user/tenant/session/ledger_account/journal_entry/provider_event read
+  VIEWER        user/tenant/ledger_account/journal_entry/provider_event read
+                (no session read, no writes)
 
 The enforcer is built per decision (correctness first): policies are loaded
 from PostgreSQL through the RevenueOS adapter. Policy-cache performance
@@ -17,8 +18,8 @@ from casbin import Enforcer
 
 from revenueos_authorization.adapter import SQLAlchemyAdapter
 
-# Objects and actions known to V1A-1 (extend per phase packet, never silently)
-OBJECTS = ("tenant", "user", "session")
+# Objects and actions known to V1A-2 (extend per phase packet, never silently)
+OBJECTS = ("tenant", "user", "session", "ledger_account", "journal_entry", "provider_event")
 ACTIONS = ("read", "write")
 
 DEFAULT_ROLE_POLICIES: tuple[tuple[str, str, str, str], ...] = (
@@ -28,6 +29,14 @@ DEFAULT_ROLE_POLICIES: tuple[tuple[str, str, str, str], ...] = (
     ("OPERATOR", "*", "session", "read"),
     ("VIEWER", "*", "user", "read"),
     ("VIEWER", "*", "tenant", "read"),
+    # V1A-2: financial surfaces are readable by OPERATOR/VIEWER,
+    # posting/writing stays TENANT_ADMIN-only (wildcard)
+    ("OPERATOR", "*", "ledger_account", "read"),
+    ("OPERATOR", "*", "journal_entry", "read"),
+    ("OPERATOR", "*", "provider_event", "read"),
+    ("VIEWER", "*", "ledger_account", "read"),
+    ("VIEWER", "*", "journal_entry", "read"),
+    ("VIEWER", "*", "provider_event", "read"),
 )
 
 

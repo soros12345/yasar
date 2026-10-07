@@ -6,6 +6,7 @@ from sqlalchemy import engine_from_config, pool
 from revenueos_api.models import Base  # noqa: F401  (target metadata)
 import revenueos_identity.models  # noqa: F401  (registers tenants/users/sessions)
 import revenueos_authorization.models  # noqa: F401  (registers casbin_rule)
+import revenueos_ledger.models  # noqa: F401  (registers financial core tables)
 from revenueos_shared.config import get_settings
 
 config = context.config

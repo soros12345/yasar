@@ -6,6 +6,7 @@ import pytest
 from alembic.config import Config
 from alembic.script import ScriptDirectory
 
+import revenueos_ledger.models  # noqa: F401  (registers financial tables on Base)
 from revenueos_api.models import Base
 
 pytestmark = pytest.mark.unit
@@ -20,12 +21,18 @@ EXPECTED_TABLES = {
     "users",
     "user_sessions",
     "casbin_rule",
+    # V1A-2 financial core
+    "ledger_accounts",
+    "ledger_journal_entries",
+    "ledger_journal_lines",
+    "provider_usage_event",
+    "provider_cost_event",
 }
 
 
-def test_no_business_tables_before_v1a2():
-    """Only bootstrap + security tables may exist. No ledger/offer/product
-    tables before their packets."""
+def test_exact_table_inventory():
+    """Exactly bootstrap + security + financial-core tables. No offer/product/
+    commission tables before their packets (V1A-5+)."""
     assert set(Base.metadata.tables) == EXPECTED_TABLES
 
 
@@ -35,7 +42,7 @@ def test_first_migration_is_empty_safe_bootstrap():
     script = ScriptDirectory.from_config(cfg)
     revisions = list(script.walk_revisions())
     heads = list(script.get_heads())
-    assert heads == ["0002_multitenant_security"]
-    assert len(revisions) == 2
+    assert heads == ["0003_financial_core"]
+    assert len(revisions) == 3
     by_id = {r.revision: r for r in revisions}
     assert by_id["0001_bootstrap"].down_revision is None
