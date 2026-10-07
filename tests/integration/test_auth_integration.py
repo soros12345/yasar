@@ -78,9 +78,10 @@ def world():
     from revenueos_shared.db import get_session_factory
 
     s = get_session_factory()()
-    s.execute(delete(CasbinRule).where(CasbinRule.v0.in_(
-        [ids["t_a"], ids["t_b"], ids["a_admin"], ids["a_op"], ids["a_viewer"], ids["b_admin"]]
-    )))
+    all_ids = [ids["t_a"], ids["t_b"], ids["a_admin"], ids["a_op"], ids["a_viewer"], ids["b_admin"]]
+    s.execute(delete(CasbinRule).where(
+        CasbinRule.v0.in_(all_ids) | CasbinRule.v1.in_(all_ids) | CasbinRule.v2.in_(all_ids)
+    ))
     s.commit()
     s.close()
 

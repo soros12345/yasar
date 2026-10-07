@@ -28,7 +28,7 @@
 - CanonicalFinancialLedger: accounts + append-only double-entry journal (DB triggers),
   mandatory idempotency, balanced posting with post-write re-read reconciliation
 - `provider_usage_event` / `provider_cost_event` ingestion contract (RevenueOS-owned, §28)
-- Migration `0003_financial_core`; 122 tests passing
+- Migration `0003_financial_core` + `0004_ledger_purge_path_fix` (append-only purge semantics); 122 tests passing; zero test residue
 
 ## V1A-1 delivered
 

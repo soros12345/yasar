@@ -85,10 +85,10 @@ def world():
     from revenueos_authorization.models import CasbinRule
 
     s = get_session_factory()()
-    s.execute(text("SET revenueos.allow_ledger_purge = 'on'"))
+    all_ids = [data["t_a"], data["t_b"], data["a_admin"],
+               data["a_op"], data["a_viewer"], data["b_admin"]]
     s.execute(delete(CasbinRule).where(
-        CasbinRule.v0.in_([data["t_a"], data["t_b"], data["a_admin"],
-                           data["a_op"], data["a_viewer"], data["b_admin"]])
+        CasbinRule.v0.in_(all_ids) | CasbinRule.v1.in_(all_ids) | CasbinRule.v2.in_(all_ids)
     ))
     s.commit()
     s.close()
