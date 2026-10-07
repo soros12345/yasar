@@ -1,0 +1,17 @@
+{
+  "name": "revenueos",
+  "private": true,
+  "version": "0.1.0",
+  "description": "RevenueOS / AffiliateOS — multi-tenant revenue operating system (V1A-0 bootstrap)",
+  "workspaces": [
+    "apps/web"
+  ],
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev:web": "npm run dev --workspace=revenueos-web",
+    "build:web": "npm run build --workspace=revenueos-web",
+    "start:web": "npm run start --workspace=revenueos-web"
+  }
+}

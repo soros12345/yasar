@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "revenueos-schemas"
+version = "0.1.0"
+description = "RevenueOS shared Pydantic contracts/schemas"
+requires-python = ">=3.12"
+license = { text = "Proprietary" }
+dependencies = [
+    "pydantic==2.13.5",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

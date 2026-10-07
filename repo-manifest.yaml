@@ -1,0 +1,348 @@
+# repo-manifest.yaml — RevenueOS source repositories (V1A-0)
+# Pinned exactly. No latest/main/HEAD/canary entries.
+manifest: repo
+phase: V1A-0
+generated: 2026-10-07
+
+repositories:
+  # --- frontend (V1A-0 required) ---
+  - name: next.js
+    canonical_url: https://github.com/vercel/next.js
+    version: "16.4.0"
+    tag_or_commit: "16.4.0"
+    license: MIT
+    edition: stable
+    phase: V1A-0
+    requirement: REQUIRED
+    security_review: PASSED (npm audit clean at install; exact pin; lockfile package-lock.json)
+    license_review: MIT — approved
+    owner_module: apps/web
+    status: INSTALLED
+
+  - name: shadcn-ui/ui
+    canonical_url: https://github.com/shadcn-ui/ui
+    version: "components vendored (button, card, badge) + tailwindcss 4.3.3"
+    tag_or_commit: UNKNOWN_CLI_VERSION
+    license: MIT
+    edition: stable
+    phase: V1A-0
+    requirement: REQUIRED
+    security_review: PASSED (vendored TSX only; no runtime registry fetch)
+    license_review: MIT — approved
+    owner_module: apps/web/src/components/ui
+    status: INSTALLED (vendored component pattern; CLI not invoked)
+
+  - name: TanStack Query
+    canonical_url: https://github.com/TanStack/query
+    version: "5.104.1"
+    tag_or_commit: "5.104.1"
+    license: MIT
+    edition: stable
+    phase: V1A-0
+    requirement: REQUIRED
+    security_review: PASSED (exact pin; lockfile)
+    license_review: MIT — approved
+    owner_module: apps/web (server-state/query layer)
+    status: INSTALLED
+
+  - name: amannn/next-intl
+    canonical_url: https://github.com/amannn/next-intl
+    version: "4.14.9"
+    tag_or_commit: "4.14.9"
+    license: MIT
+    edition: stable
+    phase: V1A-0
+    requirement: REQUIRED
+    security_review: PASSED (exact pin; lockfile)
+    license_review: MIT — approved
+    owner_module: apps/web (i18n foundation; fixed locale en in V1A-0)
+    status: INSTALLED
+
+  # --- backend (V1A-0 required) ---
+  - name: fastapi
+    canonical_url: https://github.com/fastapi/fastapi
+    version: "0.142.2"
+    tag_or_commit: "0.142.2"
+    license: MIT
+    edition: stable
+    phase: V1A-0
+    requirement: REQUIRED
+    security_review: PASSED (exact pin; requirements lockfiles)
+    license_review: MIT — approved
+    owner_module: apps/api
+    status: INSTALLED
+
+  - name: sqlalchemy
+    canonical_url: https://github.com/sqlalchemy/sqlalchemy
+    version: "2.1.3"
+    tag_or_commit: "2.1.3"
+    license: MIT
+    edition: stable
+    phase: V1A-0
+    requirement: REQUIRED
+    security_review: PASSED
+    license_review: MIT — approved
+    owner_module: packages/shared (ORM/data access)
+
+  - name: pydantic
+    canonical_url: https://github.com/pydantic/pydantic
+    version: "2.13.5"
+    tag_or_commit: "2.13.5"
+    license: MIT
+    edition: stable
+    phase: V1A-0
+    requirement: REQUIRED
+    security_review: PASSED
+    license_review: MIT — approved
+    owner_module: packages/shared, packages/schemas
+
+  - name: alembic
+    canonical_url: https://github.com/sqlalchemy/alembic
+    version: "1.20.0"
+    tag_or_commit: "1.20.0"
+    license: MIT
+    edition: stable
+    phase: V1A-0
+    requirement: REQUIRED
+    security_review: PASSED
+    license_review: MIT — approved
+    owner_module: apps/api/alembic (owns revenueos_core migrations)
+
+  - name: httpx
+    canonical_url: https://github.com/encode/httpx
+    version: "0.28.1"
+    tag_or_commit: "0.28.1"
+    license: BSD-3-Clause
+    edition: stable
+    phase: V1A-0
+    requirement: REQUIRED
+    security_review: PASSED
+    license_review: BSD-3-Clause — approved
+    owner_module: apps/api (async external HTTP + test client)
+
+  # --- jobs / scheduling (V1A-0 required) ---
+  - name: celery
+    canonical_url: https://github.com/celery/celery
+    version: "5.6.3"
+    tag_or_commit: "5.6.3"
+    license: BSD-3-Clause
+    edition: stable
+    phase: V1A-0
+    requirement: REQUIRED
+    security_review: PASSED (Celery Beat never configured: beat_schedule forced empty, asserted by tests)
+    license_review: BSD-3-Clause — approved
+    owner_module: apps/worker (EXECUTE role only)
+
+  - name: valkey (valkey-io/valkey server)
+    canonical_url: https://github.com/valkey-io/valkey
+    version: "9.1.2"
+    tag_or_commit: "9.1.2"
+    license: BSD-3-Clause
+    edition: stable
+    phase: V1A-0
+    requirement: REQUIRED
+    security_review: PASSED (stable release, built from source, no RC)
+    license_review: BSD-3-Clause — approved
+    owner_module: runtime: queue/broker/cache (celery broker + scheduler locks + heartbeats)
+    status: INSTALLED (native source build)
+
+  - name: apscheduler
+    canonical_url: https://github.com/agronholm/apscheduler
+    version: "3.11.3"
+    tag_or_commit: "3.11.3"
+    license: MIT
+    edition: stable
+    phase: V1A-0
+    requirement: REQUIRED
+    security_review: PASSED (single scheduler authority)
+    license_review: MIT — approved
+    owner_module: apps/scheduler (WHEN role — the only schedule authority)
+
+  # --- database (V1A-0 required) ---
+  - name: postgres (postgres/postgres)
+    canonical_url: https://github.com/postgres/postgres
+    version: "17.11"
+    tag_or_commit: "REL_17_11"
+    license: PostgreSQL License
+    edition: stable-patched
+    phase: V1A-0
+    requirement: REQUIRED
+    security_review: PASSED (latest patched 17.x release; native source build; scram-sha-256 host auth)
+    license_review: PostgreSQL License — approved (permissive)
+    owner_module: runtime: revenueos_core (Alembic-owned schema)
+    status: INSTALLED (native source build)
+
+  - name: pgvector
+    canonical_url: https://github.com/pgvector/pgvector
+    version: UNKNOWN
+    tag_or_commit: UNKNOWN
+    license: PostgreSQL License
+    edition: stable
+    phase: FUTURE
+    requirement: CONDITIONAL
+    security_review: NOT_STARTED
+    license_review: NOT_STARTED
+    owner_module: future vector use case (activation requires justification)
+    status: NOT_INSTALLED
+
+  # --- supporting runtime libraries ---
+  - name: uvicorn
+    canonical_url: https://github.com/encode/uvicorn
+    version: "0.54.0"
+    tag_or_commit: "0.54.0"
+    license: BSD-3-Clause
+    edition: stable
+    phase: V1A-0
+    requirement: REQUIRED (ASGI server for FastAPI)
+    security_review: PASSED (exact pin)
+    license_review: BSD-3-Clause — approved
+    owner_module: apps/api
+
+  - name: psycopg
+    canonical_url: https://github.com/psycopg/psycopg
+    version: "3.3.6"
+    tag_or_commit: "3.3.6"
+    license: LGPL-3.0-or-later
+    edition: stable
+    phase: V1A-0
+    requirement: REQUIRED (PostgreSQL DBAPI driver for SQLAlchemy)
+    security_review: PASSED (binary wheel, exact pin)
+    license_review: LGPL-3.0-or-later — ACCEPTED with note: dynamically linked driver used as an external library in a server application; no source modification. Alternative BSD drivers deferred (asyncpg is sync-context incompatible here).
+    owner_module: packages/shared
+
+  - name: redis-py
+    canonical_url: https://github.com/redis/redis-py
+    version: "8.1.0"
+    tag_or_commit: "8.1.0"
+    license: MIT
+    edition: stable
+    phase: V1A-0
+    requirement: REQUIRED (Valkey speaks the RESP protocol; redis-py is the Valkey-compatible client used by Celery transport)
+    security_review: PASSED (exact pin)
+    license_review: MIT — approved
+    owner_module: packages/shared, apps/worker
+
+  # --- security tooling (V1A-0 required) ---
+  - name: gitleaks
+    canonical_url: https://github.com/gitleaks/gitleaks
+    version: "see tool-manifest.yaml (installed binary)"
+    tag_or_commit: UNKNOWN_UNTIL_INSTALL
+    license: MIT
+    edition: stable
+    phase: V1A-0
+    requirement: REQUIRED
+    security_review: N/A (is the scanner)
+    license_review: MIT — approved
+    owner_module: scripts/security-scan.sh
+    status: INSTALLED (pinned release binary, recorded in tool-manifest.yaml)
+
+  - name: trivy
+    canonical_url: https://github.com/aquasecurity/trivy
+    version: "see tool-manifest.yaml (installed binary)"
+    tag_or_commit: UNKNOWN_UNTIL_INSTALL
+    license: Apache-2.0
+    edition: stable
+    phase: V1A-0
+    requirement: REQUIRED
+    security_review: N/A (is the scanner)
+    license_review: Apache-2.0 — approved
+    owner_module: scripts/security-scan.sh
+
+  - name: semgrep
+    canonical_url: https://github.com/semgrep/semgrep
+    version: "1.179.0"
+    tag_or_commit: "1.179.0"
+    license: LGPL-2.1 (CLI) / LICENSING.txt for enterprise rules
+    edition: community
+    phase: V1A-0
+    requirement: REQUIRED
+    security_review: N/A (is the scanner)
+    license_review: LGPL-2.1 — accepted for local static analysis use
+    owner_module: scripts/security-scan.sh
+
+  - name: sops
+    canonical_url: https://github.com/getsops/sops
+    version: UNKNOWN
+    tag_or_commit: UNKNOWN
+    license: MPL-2.0
+    edition: stable
+    phase: V1A-0
+    requirement: REQUIRED-LATER
+    security_review: NOT_STARTED
+    license_review: MPL-2.0 — acceptable (no encrypted config files exist yet)
+    owner_module: future encrypted staging/dev configuration
+    status: NOT_INSTALLED (no encrypted config use case in V1A-0; activates with first encrypted config file)
+
+  # --- explicitly NOT required in V1A-0 (recorded for roadmap clarity) ---
+  - name: langgraph
+    canonical_url: https://github.com/langchain-ai/langgraph
+    version: UNKNOWN
+    tag_or_commit: UNKNOWN
+    license: MIT
+    edition: stable
+    phase: V1A-7
+    requirement: NOT_V1A0
+    security_review: NOT_STARTED
+    license_review: NOT_STARTED
+    owner_module: future agents
+    status: NOT_INSTALLED
+  - name: litellm
+    canonical_url: https://github.com/BerriAI/litellm
+    version: UNKNOWN
+    tag_or_commit: UNKNOWN
+    license: MIT
+    edition: stable
+    phase: V1A-7
+    requirement: NOT_V1A0
+    security_review: NOT_STARTED
+    license_review: NOT_STARTED
+    owner_module: future model router
+    status: NOT_INSTALLED
+  - name: playwright
+    canonical_url: https://github.com/microsoft/playwright
+    version: UNKNOWN
+    tag_or_commit: UNKNOWN
+    license: Apache-2.0
+    edition: stable
+    phase: V1A-4+
+    requirement: NOT_V1A0
+    security_review: NOT_STARTED
+    license_review: NOT_STARTED
+    owner_module: future apps/browser-worker
+    status: NOT_INSTALLED
+  - name: pycasbin
+    canonical_url: https://github.com/casbin/pycasbin
+    version: UNKNOWN
+    tag_or_commit: UNKNOWN
+    license: Apache-2.0
+    edition: stable
+    phase: V1A-1
+    requirement: NOT_V1A0
+    security_review: NOT_STARTED
+    license_review: NOT_STARTED
+    owner_module: future packages/authorization
+    status: NOT_INSTALLED
+  - name: payloadcms/payload
+    canonical_url: https://github.com/payloadcms/payload
+    version: UNKNOWN
+    tag_or_commit: UNKNOWN
+    license: MIT
+    edition: stable
+    phase: V1B
+    requirement: NOT_V1A0
+    security_review: NOT_STARTED
+    license_review: NOT_STARTED
+    owner_module: future revenueos_cms database
+    status: NOT_INSTALLED
+  - name: echarts
+    canonical_url: https://github.com/apache/echarts
+    version: UNKNOWN
+    tag_or_commit: UNKNOWN
+    license: Apache-2.0
+    edition: stable
+    phase: V1B
+    requirement: NOT_V1A0
+    security_review: NOT_STARTED
+    license_review: NOT_STARTED
+    owner_module: future revenue-command-center charts
+    status: NOT_INSTALLED

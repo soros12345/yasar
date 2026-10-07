@@ -1,0 +1,134 @@
+# runtime-manifest.yaml — RevenueOS runtime services (V1A-0)
+# No Docker anywhere. systemd units are the Linux-production target;
+# V1A-0 dev/staging runs through scripts/*.sh (native processes + PID files).
+manifest: runtime
+phase: V1A-0
+generated: 2026-10-07
+
+services:
+  - service_id: postgresql
+    version: "17.11"
+    install_method: native source build (./configure --prefix=.runtime/pg --without-readline --without-icu), data dir .runtime/pgdata
+    systemd_unit: revenueos-postgresql.service (planned for Linux production; V1A-0 = pg_ctl via scripts/start-services.sh)
+    ports: ["127.0.0.1:5432"]
+    dependencies: []
+    health_check: "pg_isready -h 127.0.0.1 -p 5432 + SELECT 1 via /health/ready"
+    backup_policy: "pg_dump of revenueos_core — cadence/restore drills defined in V1C-7 (not yet implemented)"
+    no_docker_status: ENFORCED
+
+  - service_id: valkey
+    version: "9.1.2"
+    install_method: native source build (make + make PREFIX=.runtime/valkey install)
+    systemd_unit: revenueos-valkey.service (planned for Linux production; V1A-0 = valkey-server daemonize via scripts)
+    ports: ["127.0.0.1:6379"]
+    dependencies: []
+    health_check: "valkey-cli ping + PING via /health/ready"
+    backup_policy: "appendonly/save disabled in V1A-0 (ephemeral queues/locks; durable business state lives in PostgreSQL)"
+    no_docker_status: ENFORCED
+
+  - service_id: api
+    version: "0.1.0+v1a0 (FastAPI 0.142.2 / uvicorn 0.54.0)"
+    install_method: python venv .venv-api + uvicorn (scripts/start-services.sh)
+    systemd_unit: revenueos-api.service (planned for Linux production)
+    ports: ["127.0.0.1:8000"]
+    dependencies: ["postgresql", "valkey"]
+    health_check: "GET /health (live), GET /health/ready (postgres, valkey, worker, scheduler)"
+    backup_policy: stateless — no backup required
+    no_docker_status: ENFORCED
+
+  - service_id: worker
+    version: "0.1.0+v1a0 (Celery 5.6.3)"
+    install_method: python venv .venv-worker + celery worker (scripts/start-services.sh). CELERY BEAT IS NEVER STARTED.
+    systemd_unit: revenueos-worker.service (planned for Linux production)
+    ports: []
+    dependencies: ["valkey", "postgresql"]
+    health_check: "celery control ping reported as 'worker' component in GET /health/ready"
+    backup_policy: stateless — no backup required
+    no_docker_status: ENFORCED
+
+  - service_id: scheduler
+    version: "0.1.0+v1a0 (APScheduler 3.11.3)"
+    install_method: python venv .venv-worker + python -m revenueos_scheduler.main (scripts/start-services.sh)
+    systemd_unit: revenueos-scheduler.service (planned for Linux production; exactly ONE instance allowed)
+    ports: []
+    dependencies: ["valkey"]
+    health_check: "Valkey heartbeat key freshness reported as 'scheduler' component in GET /health/ready"
+    backup_policy: stateless; schedule definitions live in code, locks/heartbeat in Valkey (ephemeral)
+    no_docker_status: ENFORCED
+
+  - service_id: web
+    version: "0.1.0+v1a0 (Next.js 16.4.0)"
+    install_method: npm workspace + next build + next start (scripts/build-web.sh, scripts/start-services.sh)
+    systemd_unit: revenueos-web.service (planned for Linux production)
+    ports: ["0.0.0.0:3000"]
+    dependencies: ["api"]
+    health_check: "GET / returns 200 text/html; GET /api/health/ready proxies API readiness"
+    backup_policy: stateless — rebuildable from lockfile
+    no_docker_status: ENFORCED
+
+  # --- future runtimes: recorded, NOT installed, NOT enabled ---
+  - service_id: keycloak
+    version: UNKNOWN
+    install_method: UNKNOWN (container-first upstream requires No-Docker exception review)
+    systemd_unit: future
+    ports: []
+    dependencies: []
+    health_check: future
+    backup_policy: future (V1C-6)
+    no_docker_status: DEFERRED_PENDING_NO_DOCKER_REVIEW
+    enabled: false
+
+  - service_id: openbao
+    version: UNKNOWN
+    install_method: UNKNOWN (No-Docker review required)
+    systemd_unit: future
+    ports: []
+    dependencies: []
+    health_check: future
+    backup_policy: future (V1C-6)
+    no_docker_status: DEFERRED_PENDING_NO_DOCKER_REVIEW
+    enabled: false
+
+  - service_id: prometheus
+    version: UNKNOWN
+    install_method: native binary (planned)
+    systemd_unit: future
+    ports: []
+    dependencies: []
+    health_check: future
+    backup_policy: future (V1C-5)
+    no_docker_status: PLANNED_NATIVE
+    enabled: false
+
+  - service_id: opentelemetry-collector
+    version: UNKNOWN
+    install_method: native binary (planned)
+    systemd_unit: future
+    ports: []
+    dependencies: []
+    health_check: future
+    backup_policy: future (V1C-5)
+    no_docker_status: PLANNED_NATIVE
+    enabled: false
+
+  - service_id: uptime-kuma
+    version: UNKNOWN
+    install_method: native node process (planned)
+    systemd_unit: future
+    ports: []
+    dependencies: []
+    health_check: future
+    backup_policy: future (V1C-5)
+    no_docker_status: PLANNED_NATIVE
+    enabled: false
+
+  - service_id: caddy
+    version: UNKNOWN
+    install_method: native binary (planned)
+    systemd_unit: future
+    ports: []
+    dependencies: []
+    health_check: future
+    backup_policy: future
+    no_docker_status: PLANNED_NATIVE
+    enabled: false

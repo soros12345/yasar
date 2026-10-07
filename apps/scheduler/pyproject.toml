@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "revenueos-scheduler"
+version = "0.1.0"
+description = "RevenueOS APScheduler service (the single V1 schedule authority)"
+requires-python = ">=3.12"
+license = { text = "Proprietary" }
+dependencies = [
+    "apscheduler==3.11.3",
+    "celery==5.6.3",
+    "redis==8.1.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

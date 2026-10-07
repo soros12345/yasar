@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "revenueos-api"
+version = "0.1.0"
+description = "RevenueOS FastAPI API service"
+requires-python = ">=3.12"
+license = { text = "Proprietary" }
+dependencies = [
+    "fastapi==0.142.2",
+    "uvicorn==0.54.0",
+    "alembic==1.20.0",
+    "httpx==0.28.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

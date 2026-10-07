@@ -1,0 +1,60 @@
+# provider-manifest.yaml — external providers (V1A-0)
+# Every capability starts UNVERIFIED. UNKNOWN stays UNKNOWN. Nothing fabricated.
+manifest: provider
+phase: V1A-0
+generated: 2026-10-07
+
+providers:
+  - provider_id: awin
+    display_name: AWIN
+    phase_target: V1A-5 (AwinPublisherConnector), V1B-1 (AwinProductCatalogConnector)
+    credential_type: UNKNOWN (publisher API credential — not yet provisioned)
+    cost_model: UNKNOWN
+    rate_limits: UNKNOWN
+    verification_state: UNVERIFIED
+    data_rights: UNKNOWN
+    fallback: DISABLED
+    enabled: false
+    capabilities:
+      - capability_id: awin_publisher_redirect
+        verification_state: UNVERIFIED
+        notes: no Awin API endpoint or capability has been verified; interface only
+      - capability_id: awin_product_catalog
+        verification_state: UNVERIFIED
+        notes: interface only (AwinProductCatalogConnector directory exists, implementation forbidden until contract verification)
+
+  - provider_id: model_provider_placeholder
+    display_name: Future approved model provider
+    phase_target: V1A-7 (via ModelRouter → SpendGuard → LiteLLM)
+    credential_type: UNKNOWN
+    cost_model: UNKNOWN
+    rate_limits: UNKNOWN
+    verification_state: NOT_APPLICABLE
+    data_rights: UNKNOWN
+    fallback: DISABLED
+    enabled: false
+    capabilities: []
+
+  - provider_id: jev_placeholder
+    display_name: Jev (future cheap-decision helper)
+    phase_target: V2 OPTIONAL (budget-capped, experimental)
+    credential_type: UNKNOWN
+    cost_model: UNKNOWN
+    rate_limits: UNKNOWN
+    verification_state: NOT_APPLICABLE
+    data_rights: UNKNOWN
+    fallback: "Jev → Structured LLM → Deterministic Rules; JEV_ALLOW_PAID_USAGE=false by default"
+    enabled: false
+    capabilities: []
+
+  - provider_id: external_market_data_placeholder
+    display_name: Future external market-data providers
+    phase_target: V1B-3 / V1B-5 (through ExternalMarketDataMesh + DataRightsPolicyEngine)
+    credential_type: UNKNOWN
+    cost_model: UNKNOWN
+    rate_limits: UNKNOWN
+    verification_state: NOT_APPLICABLE
+    data_rights: UNKNOWN
+    fallback: DISABLED
+    enabled: false
+    capabilities: []

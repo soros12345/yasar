@@ -1,0 +1,153 @@
+# tool-manifest.yaml — helper tools (V1A-0)
+# authority is ALWAYS false for helpers. Installed security scanners are
+# verification tooling, not product runtime dependencies.
+manifest: tool
+phase: V1A-0
+generated: 2026-10-07
+
+tools:
+  # --- installed verification tooling (V1A-0 security baseline) ---
+  - tool_id: gitleaks
+    classification: SECURITY_SCANNER
+    phase: V1A-0
+    version: "see .runtime/bin/gitleaks version (pinned release binary)"
+    license: MIT
+    enabled: true
+    capabilities: ["secret leak scanning (git history + worktree)"]
+    authority: false
+    security_review: IS_THE_SCANNER
+    no_docker_status: NATIVE_BINARY
+    fallback: "manual secret review"
+
+  - tool_id: trivy
+    classification: SECURITY_SCANNER
+    phase: V1A-0
+    version: "see .runtime/bin/trivy --version (pinned release binary)"
+    license: Apache-2.0
+    enabled: true
+    capabilities: ["filesystem + secret + misconfiguration + vulnerability scanning"]
+    authority: false
+    security_review: IS_THE_SCANNER
+    no_docker_status: NATIVE_BINARY
+    fallback: "manual dependency review"
+
+  - tool_id: semgrep
+    classification: SECURITY_SCANNER
+    phase: V1A-0
+    version: "1.179.0 (.venv-tools)"
+    license: LGPL-2.1
+    enabled: true
+    capabilities: ["static security/code analysis"]
+    authority: false
+    security_review: IS_THE_SCANNER
+    no_docker_status: NATIVE_PYTHON_VENV
+    fallback: "manual code review"
+
+  # --- future helpers: NOT installed, NOT enabled ---
+  - tool_id: openclaw
+    classification: V2 OPTIONAL OPERATOR SHELL
+    phase: V2
+    version: UNKNOWN
+    license: UNKNOWN
+    enabled: false
+    capabilities: ["notifications", "read-only queries", "approval presentation"]
+    authority: false
+    security_review: NOT_STARTED
+    no_docker_status: NOT_REVIEWED
+    fallback: "RevenueOS web UI + email/webhooks"
+
+  - tool_id: browser-use
+    classification: V2 OPTIONAL
+    phase: V2
+    version: UNKNOWN
+    license: UNKNOWN
+    enabled: false
+    capabilities: ["experimental AI browser automation"]
+    authority: false
+    security_review: NOT_STARTED
+    no_docker_status: NOT_REVIEWED
+    fallback: "Playwright (primary production browser engine)"
+
+  - tool_id: jev
+    classification: V2 OPTIONAL / BUDGET-CAPPED / EXPERIMENTAL
+    phase: V2
+    version: UNKNOWN
+    license: UNKNOWN
+    enabled: false
+    capabilities: ["classification", "ranking", "routing", "triage", "cheap decision assistance"]
+    authority: false
+    security_review: NOT_STARTED
+    no_docker_status: NOT_REVIEWED
+    fallback: "Jev → Structured LLM → Deterministic Rules (JEV_ALLOW_PAID_USAGE=false default)"
+
+  - tool_id: langflow
+    classification: DEV_ONLY
+    phase: DEV_ONLY
+    version: UNKNOWN
+    license: UNKNOWN
+    enabled: false
+    capabilities: ["agent/prompt prototyping"]
+    authority: false
+    security_review: NOT_STARTED
+    no_docker_status: NOT_REVIEWED
+    fallback: "RevenueOS Agent SDK + LangGraph (production)"
+
+  - tool_id: openhands
+    classification: DEV_ONLY / OPTIONAL SECONDARY CODING AGENT
+    phase: DEV_ONLY
+    version: UNKNOWN
+    license: UNKNOWN
+    enabled: false
+    capabilities: ["review", "debug", "generate tests"]
+    authority: false
+    security_review: NOT_STARTED
+    no_docker_status: NOT_REVIEWED
+    fallback: "Codex (primary coding agent)"
+
+  - tool_id: meltano
+    classification: V2 CONDITIONAL
+    phase: V2
+    version: UNKNOWN
+    license: UNKNOWN
+    enabled: false
+    capabilities: ["data integration helper"]
+    authority: false
+    security_review: NOT_STARTED
+    no_docker_status: NOT_REVIEWED
+    fallback: "RevenueOS ProductCatalogConnector + ExternalMarketDataMesh"
+
+  - tool_id: activepieces
+    classification: V2 CONDITIONAL / DEFERRED DEFAULT
+    phase: V2
+    version: UNKNOWN
+    license: UNKNOWN
+    enabled: false
+    capabilities: ["automation flows (only via ADR + No-Docker review)"]
+    authority: false
+    security_review: NOT_STARTED
+    no_docker_status: NOT_REVIEWED
+    fallback: "RevenueOS Native Adapter (default automation runtime)"
+
+  - tool_id: n8n
+    classification: REFERENCE / DEFERRED / LICENSE-GATED
+    phase: DEFERRED
+    version: UNKNOWN
+    license: UNKNOWN
+    enabled: false
+    capabilities: ["automation (never run alongside Activepieces)"]
+    authority: false
+    security_review: NOT_STARTED
+    no_docker_status: NOT_REVIEWED
+    fallback: "RevenueOS Native Adapter"
+
+  - tool_id: openmeter
+    classification: REFERENCE_ONLY
+    phase: REFERENCE
+    version: UNKNOWN
+    license: UNKNOWN
+    enabled: false
+    capabilities: ["usage metering reference design"]
+    authority: false
+    security_review: NOT_STARTED
+    no_docker_status: NOT_INSTALLED
+    fallback: "RevenueOS provider_usage_event / provider_cost_event / CanonicalFinancialLedger"

@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "revenueos-worker"
+version = "0.1.0"
+description = "RevenueOS Celery worker (executor role only; APScheduler decides WHEN)"
+requires-python = ">=3.12"
+license = { text = "Proprietary" }
+dependencies = [
+    "celery==5.6.3",
+    "redis==8.1.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

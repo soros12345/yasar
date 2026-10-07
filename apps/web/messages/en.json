@@ -1,0 +1,24 @@
+{
+  "Shell": {
+    "title": "RevenueOS",
+    "subtitle": "AffiliateOS — global multi-tenant revenue operating system",
+    "environment": "Environment: {value}",
+    "phase": "Phase: {value}",
+    "systemReady": "SYSTEM READY",
+    "notReady": "NOT READY",
+    "waiting": "WAITING",
+    "unreachable": "UNREACHABLE",
+    "apiConnectivity": "API connectivity",
+    "databaseConnectivity": "Database connectivity",
+    "valkeyConnectivity": "Valkey connectivity",
+    "workerStatus": "Worker status",
+    "schedulerStatus": "Scheduler status",
+    "buildInfo": "Build / version information",
+    "apiVersion": "API: {value}",
+    "webVersion": "Web: {value}",
+    "lastUpdated": "Last updated: {value}",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing…",
+    "bootstrapNote": "V1A-0 bootstrap shell — no business dashboards yet. Real revenue surfaces arrive in later phase packets."
+  }
+}

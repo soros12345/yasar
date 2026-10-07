@@ -1,0 +1,31 @@
+rules:
+  - id: revenueos-no-python-eval
+    pattern: eval(...)
+    message: eval() is forbidden in RevenueOS code
+    languages: [python]
+    severity: ERROR
+  - id: revenueos-no-python-exec
+    pattern: exec(...)
+    message: exec() is forbidden in RevenueOS code
+    languages: [python]
+    severity: ERROR
+  - id: revenueos-no-shell-true-subprocess
+    pattern: subprocess.$FUNC(..., shell=True, ...)
+    message: subprocess with shell=True is forbidden
+    languages: [python]
+    severity: ERROR
+  - id: revenueos-no-unsafe-pickle-loads
+    pattern: pickle.loads(...)
+    message: pickle.loads on untrusted data is unsafe
+    languages: [python]
+    severity: ERROR
+  - id: revenueos-no-verify-false
+    pattern: requests.$FUNC(..., verify=False, ...)
+    message: TLS verification must not be disabled
+    languages: [python]
+    severity: ERROR
+  - id: revenueos-no-yaml-unsafe-load
+    pattern: yaml.load(..., Loader=yaml.UnsafeLoader, ...)
+    message: unsafe YAML loader forbidden
+    languages: [python]
+    severity: ERROR
