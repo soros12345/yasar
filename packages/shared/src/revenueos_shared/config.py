@@ -47,6 +47,10 @@ class Settings(BaseSettings):
     celery_broker_url: str = "redis://127.0.0.1:6379/1"
     celery_result_backend: str = "redis://127.0.0.1:6379/2"
 
+    # --- sessions / credentials (V1A-1) ---
+    session_ttl_hours: int = 12
+    pbkdf2_iterations: int = 600000
+
     # --- readiness / probes ---
     readiness_timeout_seconds: float = 1.5
     worker_ping_timeout_seconds: float = 1.5

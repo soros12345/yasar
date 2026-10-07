@@ -12,6 +12,10 @@ EXPECTED_TABLES = {
     "schema_version_metadata",
     "service_health_events",
     "application_builds",
+    "tenants",
+    "users",
+    "user_sessions",
+    "casbin_rule",
     "alembic_version",
 }
 
@@ -25,10 +29,10 @@ def test_database_connection():
 def test_migrations_applied_and_current():
     with get_engine().connect() as conn:
         version = conn.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-    assert version == "0001_bootstrap"
+    assert version == "0002_multitenant_security"
 
 
-def test_only_bootstrap_tables_exist():
+def test_exact_schema_inventory():
     names = set(inspect(get_engine()).get_table_names())
     assert names == EXPECTED_TABLES, f"unexpected schema objects: {names}"
     assert set(Base.metadata.tables) | {"alembic_version"} == EXPECTED_TABLES

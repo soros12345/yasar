@@ -1,7 +1,7 @@
 # repo-manifest.yaml — RevenueOS source repositories (V1A-0)
 # Pinned exactly. No latest/main/HEAD/canary entries.
 manifest: repo
-phase: V1A-0
+phase: V1A-1 (V1A-0 delivered)
 generated: 2026-10-07
 
 repositories:
@@ -310,18 +310,18 @@ repositories:
     license_review: NOT_STARTED
     owner_module: future apps/browser-worker
     status: NOT_INSTALLED
-  - name: pycasbin
+  - name: pycasbin (PyPI: casbin)
     canonical_url: https://github.com/casbin/pycasbin
-    version: UNKNOWN
-    tag_or_commit: UNKNOWN
+    version: "1.43.0"
+    tag_or_commit: "1.43.0"
     license: Apache-2.0
     edition: stable
     phase: V1A-1
-    requirement: NOT_V1A0
-    security_review: NOT_STARTED
-    license_review: NOT_STARTED
-    owner_module: future packages/authorization
-    status: NOT_INSTALLED
+    requirement: REQUIRED
+    security_review: PASSED (exact pin, lockfiles updated; RevenueOS owns model/policy/adapter — casbin is the designated authorization engine per constitution §14)
+    license_review: Apache-2.0 — approved
+    owner_module: packages/authorization (authorization authority with RevenueOS permissions)
+    status: INSTALLED
   - name: payloadcms/payload
     canonical_url: https://github.com/payloadcms/payload
     version: UNKNOWN

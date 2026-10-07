@@ -9,7 +9,7 @@ from revenueos_shared.config import get_settings
 from revenueos_shared.correlation import CorrelationIdMiddleware
 from revenueos_shared.logging import configure_logging
 
-from revenueos_api.routers import health
+from revenueos_api.routers import auth, health, v1
 
 logger = logging.getLogger("revenueos.api")
 
@@ -26,6 +26,8 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(CorrelationIdMiddleware)
     app.include_router(health.router)
+    app.include_router(auth.router)
+    app.include_router(v1.router)
 
     @app.get("/", tags=["meta"])
     def root() -> JSONResponse:
