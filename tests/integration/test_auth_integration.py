@@ -356,6 +356,19 @@ def test_openapi_path_inventory(world):
         "/api/v1/ledger/accounts", "/api/v1/ledger/entries",
         "/api/v1/ledger/entries/{entry_id}", "/api/v1/ledger/balances",
         "/api/v1/provider-events/usage", "/api/v1/provider-events/cost",
+        # V1A-3 execution authority surface
+        "/api/v1/execution/decide",
+        "/api/v1/execution/runs",
+        "/api/v1/execution/runs/{run_id}",
+        "/api/v1/execution/runs/{run_id}/execute",
+        "/api/v1/execution/runs/{run_id}/verify",
+        "/api/v1/execution/events",
+        "/api/v1/execution/outbox/pending",
+        "/api/v1/execution/workflows",
+        "/api/v1/execution/workflows/{workflow_id}/verify",
+        "/api/v1/approval-requests",
+        "/api/v1/approval-requests/{request_id}/approve",
+        "/api/v1/approval-requests/{request_id}/deny",
     }
     assert paths == expected, f"route inventory changed: {paths ^ expected}"
 
@@ -389,6 +402,22 @@ def test_every_protected_route_rejects_missing_token(world):
         ("POST", "/api/v1/provider-events/cost",
          {"provider_id": "p", "occurred_at": "2026-10-07T00:00:00Z",
           "amount": "1.00", "currency": "USD", "cost_type": "api_call"}),
+        # V1A-3 execution authority surface
+        ("POST", "/api/v1/execution/decide",
+         {"intent": "outbox_flush", "correlation_id": "c", "payload": {}}),
+        ("GET", "/api/v1/execution/runs", None),
+        ("GET", "/api/v1/execution/runs/some-id", None),
+        ("POST", "/api/v1/execution/runs/some-id/execute", None),
+        ("POST", "/api/v1/execution/runs/some-id/verify", None),
+        ("GET", "/api/v1/execution/events", None),
+        ("GET", "/api/v1/execution/outbox/pending", None),
+        ("POST", "/api/v1/execution/workflows", None),
+        ("GET", "/api/v1/execution/workflows", None),
+        ("POST", "/api/v1/execution/workflows/some-id/verify", None),
+        ("GET", "/api/v1/approval-requests", None),
+        ("POST", "/api/v1/approval-requests", None),
+        ("POST", "/api/v1/approval-requests/some-id/approve", None),
+        ("POST", "/api/v1/approval-requests/some-id/deny", None),
     ]
     for method, path, body in probes:
         r = httpx.request(method, f"{BASE}{path}", json=body, timeout=TIMEOUT)

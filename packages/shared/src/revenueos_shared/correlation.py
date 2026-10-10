@@ -1,11 +1,12 @@
-"""Correlation ID ASGI middleware (framework-agnostic, no third-party deps)."""
+"""Correlation ID ASGI middleware + context helper (framework-agnostic)."""
 
 import uuid
 from collections.abc import Awaitable, Callable
 
 from revenueos_shared.logging import correlation_id_var
 
-CORRELATION_HEADER = b"x-correlation-id"
+CORRELATION_HEADER = b"X-Correlation-ID"
+CORRELATION_HEADER_ENV = "HTTP_X_CORRELATION_ID"
 
 
 class CorrelationIdMiddleware:
@@ -42,3 +43,13 @@ class CorrelationIdMiddleware:
 def correlation_id_dependency() -> str:
     """FastAPI dependency returning the current request correlation id."""
     return correlation_id_var.get()
+
+
+def get_correlation_id() -> str:
+    """Process-wide helper: returns current correlation id or a fresh one."""
+    cid = correlation_id_var.get()
+    if cid:
+        return cid
+    cid = uuid.uuid4().hex
+    correlation_id_var.set(cid)
+    return cid

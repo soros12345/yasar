@@ -7,6 +7,10 @@ from revenueos_api.models import Base  # noqa: F401  (target metadata)
 import revenueos_identity.models  # noqa: F401  (registers tenants/users/sessions)
 import revenueos_authorization.models  # noqa: F401  (registers casbin_rule)
 import revenueos_ledger.models  # noqa: F401  (registers financial core tables)
+import revenueos_execution_controller.models  # noqa: F401  (registers execution_controller_runs/approval_requests)
+import revenueos_event_backbone.models  # noqa: F401  (registers execution_events/outbox_events)
+import revenueos_spendguard.models  # noqa: F401  (registers spend_guard_decisions)
+import revenueos_workflow_state.models  # noqa: F401  (registers workflow_instances)
 from revenueos_shared.config import get_settings
 
 config = context.config

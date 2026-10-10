@@ -51,7 +51,7 @@ def test_generates_correlation_id_when_absent():
     app, messages = _run({})
     start = messages[0]
     response_headers = {
-        k.decode("latin-1"): v.decode("latin-1") for k, v in start["headers"]
+        k.decode("latin-1").lower(): v.decode("latin-1") for k, v in start["headers"]
     }
     cid = response_headers.get("x-correlation-id")
     assert cid and len(cid) == 32
@@ -62,7 +62,7 @@ def test_propagates_incoming_correlation_id():
     app, messages = _run({"x-correlation-id": "trace-abc-42"})
     start = messages[0]
     response_headers = {
-        k.decode("latin-1"): v.decode("latin-1") for k, v in start["headers"]
+        k.decode("latin-1").lower(): v.decode("latin-1") for k, v in start["headers"]
     }
-    assert response_headers["x-correlation-id"] == "trace-abc-42"
+    assert response_headers.get("x-correlation-id") == "trace-abc-42"
     assert app.seen_correlation_id == "trace-abc-42"

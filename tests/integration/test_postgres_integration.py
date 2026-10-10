@@ -21,6 +21,13 @@ EXPECTED_TABLES = {
     "ledger_journal_lines",
     "provider_usage_event",
     "provider_cost_event",
+    # V1A-3 execution authority
+    "execution_controller_runs",
+    "execution_events",
+    "outbox_events",
+    "approval_requests",
+    "workflow_instances",
+    "spend_guard_decisions",
     "alembic_version",
 }
 
@@ -34,7 +41,7 @@ def test_database_connection():
 def test_migrations_applied_and_current():
     with get_engine().connect() as conn:
         version = conn.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-    assert version == "0004_ledger_purge_path_fix"
+    assert version == "0005_execution"
 
 
 def test_exact_schema_inventory():

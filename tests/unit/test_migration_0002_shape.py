@@ -29,6 +29,13 @@ EXPECTED_TABLES = {  # noqa: E501
     "ledger_journal_lines",
     "provider_usage_event",
     "provider_cost_event",
+    # V1A-3 execution authority
+    "execution_controller_runs",
+    "execution_events",
+    "outbox_events",
+    "approval_requests",
+    "workflow_instances",
+    "spend_guard_decisions",
 }
 
 
@@ -46,10 +53,12 @@ def test_migration_chain_linear_and_reversible():
         "0002_multitenant_security",
         "0003_financial_core",
         "0004_ledger_purge_path_fix",
+        "0005_execution",
     }
     assert revisions["0002_multitenant_security"].down_revision == "0001_bootstrap"
     assert revisions["0003_financial_core"].down_revision == "0002_multitenant_security"
     assert revisions["0004_ledger_purge_path_fix"].down_revision == "0003_financial_core"
+    assert revisions["0005_execution"].down_revision == "0004_ledger_purge_path_fix"
     assert revisions["0001_bootstrap"].down_revision is None
     # downgrade functions exist (reversibility proven by loading the modules)
     import importlib.util
@@ -59,6 +68,7 @@ def test_migration_chain_linear_and_reversible():
         ("0002_multitenant_security.py", "0002_multitenant_security"),
         ("0003_financial_core.py", "0003_financial_core"),
         ("0004_ledger_purge_path_fix.py", "0004_ledger_purge_path_fix"),
+        ("0005_execution.py", "0005_execution"),
     ):
         path = Path("apps/api/alembic/versions") / filename
         spec = importlib.util.spec_from_file_location(f"mig_{rev_id}", path)

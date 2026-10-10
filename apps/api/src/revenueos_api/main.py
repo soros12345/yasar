@@ -9,7 +9,15 @@ from revenueos_shared.config import get_settings
 from revenueos_shared.correlation import CorrelationIdMiddleware
 from revenueos_shared.logging import configure_logging
 
-from revenueos_api.routers import auth, health, ledger, provider_events, v1
+from revenueos_api.routers import (
+    approval_requests,
+    auth,
+    execution,
+    health,
+    ledger,
+    provider_events,
+    v1,
+)
 
 logger = logging.getLogger("revenueos.api")
 
@@ -21,7 +29,10 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="RevenueOS API",
         version=settings.app_version,
-        description="RevenueOS / AffiliateOS — V1A-2 API (bootstrap + security + financial core)",
+        description=(
+            "RevenueOS / AffiliateOS — V1A-3 API "
+            "(bootstrap + security + financial core + execution authority)"
+        ),
         contact={"name": "RevenueOS"},
     )
     app.add_middleware(CorrelationIdMiddleware)
@@ -30,6 +41,8 @@ def create_app() -> FastAPI:
     app.include_router(v1.router)
     app.include_router(ledger.router)
     app.include_router(provider_events.router)
+    app.include_router(execution.router)
+    app.include_router(approval_requests.router)
 
     @app.get("/", tags=["meta"])
     def root() -> JSONResponse:

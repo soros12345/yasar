@@ -5,7 +5,8 @@
 | V1A-0 | Bootstrap | **PASS** (2026-10-07) — see `docs/v1a-0-acceptance-report.md` |
 | V1A-1 | Multi-Tenancy Security | **PASS** (2026-10-07) — see `docs/v1a-1-acceptance-report.md` |
 | V1A-2 | Financial Core | **PASS** (2026-10-07) — see `docs/v1a-2-acceptance-report.md` |
-| V1A-2..V1A-9, V1B-*, V1C-* | ... | NOT STARTED (directories exist as forward-compatible placeholders; runtime activation forbidden) |
+| V1A-3 | Execution Authority | **PASS** (2026-10-10) — see `docs/v1a-3-acceptance-report.md` |
+| V1A-3..V1A-9, V1B-*, V1C-* | ... | NOT STARTED (directories exist as forward-compatible placeholders; runtime activation forbidden) |
 
 ## V1A-0 delivered
 
@@ -21,6 +22,19 @@
   components) with API/DB/worker/scheduler status, environment and build info
 - 52 tests (27 unit, 25 integration), security scans, four manifests,
   native start/stop/restart scripts
+
+## V1A-3 delivered
+
+- `revenueos-event-backbone`: append-only `execution_events` (+ DB trigger) and a
+  durable `outbox_events` queue; correlation/causation ids everywhere
+- `revenueos-execution-controller`: single-audit-row Decision→…→Approval plan and
+  execute-once execution; payload persisted on the run for deterministic replay
+- `revenueos-workflow-state`: query-verify-retry with terminal-exactly-once states
+- `revenueos-spendguard` / `capabilities` / `decision-model-adapter`: inert
+  enforcement stubs — every guard state recorded `UNVERIFIED`, nothing fabricated
+- Migration `0005_execution` (6 tables) + `/api/v1/execution/*` and
+  `/api/v1/approval-requests/*` surfaces; Celery tasks carry correlation ids
+- 157 tests (84 unit + 73 integration); 22 new unit and 13 new integration tests
 
 ## V1A-2 delivered
 
@@ -42,4 +56,5 @@
 
 ## Next packet (requires explicit instruction)
 
-**V1A-1 MULTI-TENANT SECURITY** — summary in the V1A-0 acceptance report.
+**V1A-4 EXECUTION ADAPTERS** — real provider/adapter calls behind the V1A-3
+authority chain (AWIN), plus the production policy/SpendGuard engine.
