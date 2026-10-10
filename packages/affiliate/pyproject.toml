@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "revenueos-affiliate"
+version = "0.1.0"
+description = "RevenueOS affiliate connectors: fail-closed Awin publisher connector (V1A-5 skeleton, credentials UNPROVISIONED)"
+requires-python = ">=3.12"
+license = { text = "Proprietary" }
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]

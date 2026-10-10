@@ -22,6 +22,11 @@ def list_adapters_route(
     principal: Principal = Depends(permission("provider_adapter", "read")),
 ) -> list[AdapterOut]:
     return [
-        AdapterOut(adapter_id=a.adapter_id, capability_id=a.capability_id, enabled=a.enabled)
+        AdapterOut(
+            adapter_id=a.adapter_id,
+            capability_id=a.capability_id,
+            enabled=a.enabled,
+            readiness=a.readiness(),
+        )
         for a in list_adapters()
     ]

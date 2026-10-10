@@ -7,7 +7,7 @@ generated: 2026-10-07
 providers:
   - provider_id: awin
     display_name: AWIN
-    phase_target: V1A-4 (adapter framework, disabled) / V1A-5 (AwinPublisherConnector), V1B-1 (AwinProductCatalogConnector)
+    phase_target: V1A-5 (AwinPublisherConnector), V1B-1 (AwinProductCatalogConnector)
     credential_type: UNKNOWN (publisher API credential — not yet provisioned)
     cost_model: UNKNOWN
     rate_limits: UNKNOWN
@@ -15,6 +15,7 @@ providers:
     data_rights: UNKNOWN
     fallback: DISABLED
     enabled: false
+    status: V1A-5 skeleton delivered 2026-10-10 (fail-closed connector + credential readiness, packages/affiliate); real API contract UNKNOWN until credentials are provisioned
     capabilities:
       - capability_id: awin_publisher_redirect
         verification_state: UNVERIFIED

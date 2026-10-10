@@ -7,7 +7,8 @@
 | V1A-2 | Financial Core | **PASS** (2026-10-07) — see `docs/v1a-2-acceptance-report.md` |
 | V1A-3 | Execution Authority | **PASS** (2026-10-10) — see `docs/v1a-3-acceptance-report.md` |
 | V1A-4 | Execution Adapters | **PASS** (2026-10-10) — see `docs/v1a-4-acceptance-report.md` |
-| V1A-5..V1A-9, V1B-*, V1C-* | ... | NOT STARTED (directories exist as forward-compatible placeholders; runtime activation forbidden) |
+| V1A-5 | Awin Publisher Connector | **SKELETON — CREDENTIAL-BLOCKED** (2026-10-10) — see `docs/v1a-5-awin-connector-skeleton.md` (fail-closed connector + credential readiness; cannot PASS until a real Awin credential is provisioned) |
+| V1A-6..V1A-9, V1B-*, V1C-* | ... | NOT STARTED (directories exist as forward-compatible placeholders; runtime activation forbidden) |
 
 ## V1A-0 delivered
 
@@ -75,5 +76,8 @@
 
 ## Next packet (requires explicit instruction)
 
-**V1A-5 AWIN CONNECTOR** — the real Awin publisher connector behind the V1A-4
-adapter boundary, which requires verified Awin credentials (currently UNVERIFIED).
+**V1A-5 AWIN CONNECTOR** is **CREDENTIAL-BLOCKED**: the skeleton is delivered
+(`packages/affiliate`, fail-closed, `readiness: DISABLED`), but it cannot PASS
+until a real Awin publisher credential is provisioned and the
+`awin_publisher_redirect` capability is VERIFIED. See
+`docs/v1a-5-awin-connector-skeleton.md` for exactly what is required to finish it.

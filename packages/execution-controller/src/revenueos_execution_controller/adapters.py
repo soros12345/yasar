@@ -85,18 +85,39 @@ class ProviderAdapter:
     def invoke(self, transport: Transport, operation: str, params: dict) -> dict:
         raise NotImplementedError
 
+    def readiness(self) -> str:
+        """Dispatch readiness: READY only when the adapter is enabled."""
+        return "READY" if self.enabled else "DISABLED"
+
 
 class AwinPublisherAdapter(ProviderAdapter):
     """Awin publisher connector adapter — DISABLED.
 
     Awin publisher credentials/capabilities are UNVERIFIED (provider-manifest),
-    so no operation may be dispatched. This class documents the boundary; it
-    performs no network call.
+    so no operation may be dispatched. Readiness is delegated to the fail-closed
+    ``revenueos_affiliate`` connector: disabled -> credential NOT_CONFIGURED ->
+    capability not VERIFIED -> READY. This class performs no network call.
     """
 
     adapter_id = "awin_publisher"
     capability_id = "awin_publisher_redirect"
     enabled = False
+
+    def readiness(self) -> str:
+        from revenueos_affiliate import AwinPublisherConnector, load_awin_config
+        from revenueos_shared.db import session_scope
+
+        connector = AwinPublisherConnector(
+            adapter_enabled=self.enabled, capability_id=self.capability_id
+        )
+        capability_state = "UNVERIFIED"
+        if self.enabled:
+            with session_scope() as db:
+                state, _ = capability_guard(db, self.capability_id)
+                capability_state = state
+        return connector.readiness(
+            enabled=self.enabled, capability_state=capability_state, config=load_awin_config()
+        ).state
 
     def invoke(self, transport: Transport, operation: str, params: dict) -> dict:
         raise AdapterDeniedError(

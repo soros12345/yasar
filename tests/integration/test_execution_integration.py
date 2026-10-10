@@ -573,13 +573,15 @@ def test_spend_budget_is_admin_only_and_denies_over_budget(world):
     assert body["status"] == "DENIED"
 
 
-def test_adapters_surface_reports_awin_disabled(world):
+def test_adapters_surface_reports_awin_disabled_and_not_ready(world):
     viewer = token(world, "slug_a", "viewer")
     r = httpx.get(f"{BASE}/api/v1/adapters", headers=auth(viewer), timeout=TIMEOUT)
     assert r.status_code == 200, r.text
     awin = {a["adapter_id"]: a for a in r.json()}["awin_publisher"]
     assert awin["enabled"] is False
     assert awin["capability_id"] == "awin_publisher_redirect"
+    # fail-closed readiness: disabled, therefore never dispatchable
+    assert awin["readiness"] == "DISABLED"
 
 
 def test_approval_gates_execution_run_and_releases_on_approve(world):

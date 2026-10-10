@@ -149,6 +149,7 @@ class AdapterOut(BaseModel):
     adapter_id: str
     capability_id: str
     enabled: bool
+    readiness: str
     registered: bool = True
 
 
