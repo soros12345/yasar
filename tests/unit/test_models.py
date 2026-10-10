@@ -34,6 +34,10 @@ EXPECTED_TABLES = {
     "approval_requests",
     "workflow_instances",
     "spend_guard_decisions",
+    # V1A-4 execution adapters (enforced guards)
+    "provider_capabilities",
+    "spend_guard_budgets",
+    "execution_policies",
 }
 
 
@@ -49,8 +53,8 @@ def test_first_migration_is_empty_safe_bootstrap():
     script = ScriptDirectory.from_config(cfg)
     revisions = list(script.walk_revisions())
     heads = list(script.get_heads())
-    assert heads == ["0005_execution"]
-    assert len(revisions) == 5
+    assert heads == ["0006_execution_adapters"]
+    assert len(revisions) == 6
     by_id = {r.revision: r for r in revisions}
     assert by_id["0001_bootstrap"].down_revision is None
     assert by_id["0004_ledger_purge_path_fix"].down_revision == "0003_financial_core"

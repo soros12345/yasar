@@ -23,8 +23,8 @@ class Settings(BaseSettings):
     # --- identity / build ---
     project_name: str = "RevenueOS"
     environment: str = "development"
-    app_version: str = "0.1.0+v1a3"
-    phase: str = "V1A-3"
+    app_version: str = "0.1.0+v1a4"
+    phase: str = "V1A-4"
     log_level: str = "INFO"
     log_format: str = "json"
 

@@ -27,6 +27,8 @@ OBJECTS = (
     "tenant", "user", "session", "ledger_account", "journal_entry", "provider_event",
     "execution_controller_run", "execution_event", "approval_request",
     "outbox_event", "workflow_instance", "spend_guard_decision",
+    # V1A-4 execution adapters (enforced guards)
+    "provider_capability", "spend_guard_budget", "execution_policy", "provider_adapter",
 )
 ACTIONS = ("read", "write")
 
@@ -57,6 +59,15 @@ DEFAULT_ROLE_POLICIES: tuple[tuple[str, str, str, str], ...] = (
     ("VIEWER", "*", "outbox_event", "read"),
     ("VIEWER", "*", "workflow_instance", "read"),
     ("VIEWER", "*", "spend_guard_decision", "read"),
+    # V1A-4 execution-adapter surfaces readable by OPERATOR/VIEWER
+    ("OPERATOR", "*", "provider_capability", "read"),
+    ("OPERATOR", "*", "spend_guard_budget", "read"),
+    ("OPERATOR", "*", "execution_policy", "read"),
+    ("OPERATOR", "*", "provider_adapter", "read"),
+    ("VIEWER", "*", "provider_capability", "read"),
+    ("VIEWER", "*", "spend_guard_budget", "read"),
+    ("VIEWER", "*", "execution_policy", "read"),
+    ("VIEWER", "*", "provider_adapter", "read"),
 )
 
 

@@ -6,7 +6,8 @@
 | V1A-1 | Multi-Tenancy Security | **PASS** (2026-10-07) — see `docs/v1a-1-acceptance-report.md` |
 | V1A-2 | Financial Core | **PASS** (2026-10-07) — see `docs/v1a-2-acceptance-report.md` |
 | V1A-3 | Execution Authority | **PASS** (2026-10-10) — see `docs/v1a-3-acceptance-report.md` |
-| V1A-3..V1A-9, V1B-*, V1C-* | ... | NOT STARTED (directories exist as forward-compatible placeholders; runtime activation forbidden) |
+| V1A-4 | Execution Adapters | **PASS** (2026-10-10) — see `docs/v1a-4-acceptance-report.md` |
+| V1A-5..V1A-9, V1B-*, V1C-* | ... | NOT STARTED (directories exist as forward-compatible placeholders; runtime activation forbidden) |
 
 ## V1A-0 delivered
 
@@ -22,6 +23,24 @@
   components) with API/DB/worker/scheduler status, environment and build info
 - 52 tests (27 unit, 25 integration), security scans, four manifests,
   native start/stop/restart scripts
+
+## V1A-4 delivered
+
+- `revenueos-capabilities`: `provider_capabilities` registry + `capability_guard()`
+  — a capability is usable only when registered, enabled, and VERIFIED; otherwise
+  DENIED (deny-by-default, scope-enforced). Awin remains UNVERIFIED.
+- `revenueos-spendguard`: `spend_guard_budgets` + `evaluate_spend()` — budget vs
+  RevenueOS-recorded `provider_cost_event` spend: no budget → NOT_APPLICABLE,
+  within → ALLOWED, over → DENIED; every evaluation recorded.
+- `revenueos-execution-controller`: enforced guard chain (`execution_policies`
+  table, deny-by-default policy, PostgreSQL advisory locks), capability-gated
+  provider adapter framework (`AwinPublisherAdapter` disabled), and a
+  terminal-once approval decision engine. `execute_intent()` refuses DENIED /
+  APPROVAL_REQUIRED / unsatisfied-guard runs.
+- Migration `0006_execution_adapters` (3 tables + approval-decision columns) and
+  `/api/v1/capabilities`, `/api/v1/spend-guard/*`, `/api/v1/execution-policies`,
+  `/api/v1/adapters`, plus real approve/deny decisions.
+- 182 tests (103 unit + 79 integration); 19 new unit and 6 new integration tests.
 
 ## V1A-3 delivered
 
@@ -56,5 +75,5 @@
 
 ## Next packet (requires explicit instruction)
 
-**V1A-4 EXECUTION ADAPTERS** — real provider/adapter calls behind the V1A-3
-authority chain (AWIN), plus the production policy/SpendGuard engine.
+**V1A-5 AWIN CONNECTOR** — the real Awin publisher connector behind the V1A-4
+adapter boundary, which requires verified Awin credentials (currently UNVERIFIED).

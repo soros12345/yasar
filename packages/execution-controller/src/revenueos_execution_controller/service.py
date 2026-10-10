@@ -8,7 +8,7 @@ No direct external writes from anywhere else. Every effect passes through this
 controller and is recorded in execution_controller_runs + execution_events.
 """
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 from sqlalchemy import select
@@ -20,7 +20,8 @@ from revenueos_event_backbone.service import (
     mark_outbox_dispatched,
 )
 from revenueos_spendguard.models import SPendGuardState_UNVERIFIED, SPendGuardState_DENIED
-from revenueos_spendguard.service import evaluate_stub
+from revenueos_spendguard.service import evaluate_spend
+from revenueos_capabilities.service import capability_guard
 from revenueos_ledger.service import post_entry
 from revenueos_shared.correlation import get_correlation_id
 
@@ -38,12 +39,20 @@ RUN_STATUS_VERIFYING = "VERIFYING"
 EXECUTION_INTENT_POST_JOURNAL_ENTRY = "post_journal_entry"
 EXECUTION_INTENT_INGEST_PROVIDER_EVENT = "ingest_provider_event"
 EXECUTION_INTENT_OUTBOX_FLUSH = "outbox_flush"
+EXECUTION_INTENT_INVOKE_ADAPTER = "invoke_adapter"
 
 SUPPORTED_INTENTS = (
     EXECUTION_INTENT_POST_JOURNAL_ENTRY,
     EXECUTION_INTENT_INGEST_PROVIDER_EVENT,
     EXECUTION_INTENT_OUTBOX_FLUSH,
+    EXECUTION_INTENT_INVOKE_ADAPTER,
 )
+
+GUARD_ALLOWED = "ALLOWED"
+GUARD_NOT_APPLICABLE = "NOT_APPLICABLE"
+GUARD_DENIED = "DENIED"
+APPROVAL_REQUIRED_STATE = "REQUIRED"
+GUARD_STATES_SATISFIED = (GUARD_ALLOWED, GUARD_NOT_APPLICABLE)
 
 
 class ExecutionError(RuntimeError):
@@ -64,6 +73,7 @@ class ExecutionPlan:
     lock_state: str = "UNVERIFIED"
     risk_state: str = "UNVERIFIED"
     approval_state: str = "UNVERIFIED"
+    guard_reasons: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -285,6 +295,47 @@ def execute_outbox_flush(db: DbSession, plan_obj: ExecutionPlan) -> ExecutionRes
     )
 
 
+def execute_invoke_adapter(db: DbSession, plan_obj: ExecutionPlan) -> ExecutionResult:
+    """Stage 9: Execution — capability-gated provider adapter invocation.
+
+    The adapter layer re-checks the capability; an unverified capability (the
+    Awin case) is denied here even if it somehow reached execution.
+    """
+    from revenueos_execution_controller.adapters import AdapterDeniedError, invoke_adapter
+
+    payload = plan_obj.payload or {}
+    adapter_id = payload.get("adapter_id")
+    if not adapter_id:
+        raise ExecutionError("invoke_adapter requires an adapter_id")
+    try:
+        result = invoke_adapter(
+            db,
+            adapter_id=adapter_id,
+            operation=payload.get("operation", "invoke"),
+            params=payload.get("params"),
+            capability_id=payload.get("capability_id"),
+            unit=payload.get("unit"),
+            amount=payload.get("amount"),
+        )
+    except AdapterDeniedError as exc:
+        raise ExecutionError(f"adapter denied: {exc}") from exc
+    event = append_event(
+        db,
+        tenant_id=plan_obj.tenant_id,
+        correlation_id=plan_obj.correlation_id,
+        causation_id=plan_obj.correlation_id,
+        event_type="execution.adapter_dispatched",
+        payload={"adapter_id": adapter_id, "status": result.status, "operation": result.operation},
+    )
+    return ExecutionResult(
+        run_id="",
+        status=RUN_STATUS_SUCCEEDED,
+        correlation_id=plan_obj.correlation_id,
+        message=f"adapter {adapter_id} dispatched",
+        event_id=event.id,
+    )
+
+
 def plan_execution(
     db: DbSession,
     *,
@@ -310,15 +361,77 @@ def plan_execution(
         payload=payload,
     )
     plan_obj = plan(db, plan_obj)
-    for step in (
-        check_capability_stub,
-        check_spend_guard_stub,
-        check_policy_stub,
-        check_locks_stub,
-        check_risk_stub,
-        check_approval_stub,
-    ):
-        plan_obj = step(db, plan_obj)
+
+    # Stage 3: capability (only when the intent references a provider capability)
+    cap_ref = payload.get("capability_id")
+    if cap_ref:
+        cap_state, cap_reason = capability_guard(
+            db, cap_ref, unit=payload.get("unit"), amount=payload.get("amount")
+        )
+    else:
+        cap_state, cap_reason = (
+            GUARD_NOT_APPLICABLE,
+            "intent does not reference a provider capability",
+        )
+    plan_obj.capability_state = cap_state
+    plan_obj.guard_reasons["capability"] = cap_reason
+
+    # Stage 4: SpendGuard (production budget evaluation)
+    spend_decision = evaluate_spend(
+        db,
+        tenant_id=tenant_id,
+        correlation_id=cid,
+        intent=intent,
+        provider_id=payload.get("provider_id"),
+        currency=payload.get("currency"),
+        amount=payload.get("amount"),
+    )
+    plan_obj.spend_guard_state = spend_decision.state
+    plan_obj.guard_reasons["spend_guard"] = spend_decision.reason
+
+    # Stage 5: policy
+    from revenueos_execution_controller.policy import evaluate_policy
+
+    policy_state, requires_approval, policy_reason = evaluate_policy(db, tenant_id, intent)
+    plan_obj.policy_state = policy_state
+    plan_obj.guard_reasons["policy"] = policy_reason
+
+    # Stage 6: locks (PostgreSQL advisory lock)
+    from revenueos_execution_controller.locks import acquire_execution_lock
+
+    lock_state, lock_reason = acquire_execution_lock(db, tenant_id, intent)
+    plan_obj.lock_state = lock_state
+    plan_obj.guard_reasons["lock"] = lock_reason
+
+    # Stage 7: risk (no risk scoring engine configured in V1A-4)
+    plan_obj.risk_state = GUARD_NOT_APPLICABLE
+    plan_obj.guard_reasons["risk"] = "no risk scoring engine configured"
+
+    # Stage 8: approval
+    if requires_approval or payload.get("requires_approval"):
+        plan_obj.approval_state = APPROVAL_REQUIRED_STATE
+        plan_obj.guard_reasons["approval"] = "policy requires an approval decision"
+    else:
+        plan_obj.approval_state = GUARD_NOT_APPLICABLE
+        plan_obj.guard_reasons["approval"] = "no approval required"
+
+    # A single denied guard denies the whole run; a required approval parks it.
+    denied = any(
+        state == GUARD_DENIED
+        for state in (
+            plan_obj.capability_state,
+            plan_obj.spend_guard_state,
+            plan_obj.policy_state,
+            plan_obj.lock_state,
+            plan_obj.risk_state,
+        )
+    )
+    if denied:
+        run_status = RUN_STATUS_DENIED
+    elif plan_obj.approval_state == APPROVAL_REQUIRED_STATE:
+        run_status = RUN_STATUS_APPROVAL_REQUIRED
+    else:
+        run_status = RUN_STATUS_PLANNED
 
     run = _create_run(
         db,
@@ -327,12 +440,13 @@ def plan_execution(
         correlation_id=cid,
         intent=intent,
         user_id=user_id,
-        status=RUN_STATUS_PLANNED,
+        status=run_status,
         decision_json={
             "intent": intent,
             "payload": payload,
             "user_id": user_id,
             "decision_note": plan_obj.decision_note,
+            "guard_reasons": plan_obj.guard_reasons,
         },
         capability_state=plan_obj.capability_state,
         spend_guard_state=plan_obj.spend_guard_state,
@@ -341,6 +455,18 @@ def plan_execution(
         risk_state=plan_obj.risk_state,
         approval_state=plan_obj.approval_state,
     )
+    if run_status == RUN_STATUS_APPROVAL_REQUIRED:
+        from revenueos_execution_controller.approval import create_approval_request
+
+        create_approval_request(
+            db,
+            tenant_id=tenant_id,
+            requested_by=user_id,
+            request_type=intent,
+            correlation_id=cid,
+            run_id=run.id,
+            subject={"intent": intent, "payload_keys": sorted(payload.keys())},
+        )
     append_event(
         db,
         tenant_id=tenant_id,
@@ -373,9 +499,30 @@ def execute_intent(db: DbSession, run: "ExecutionControllerRun") -> ExecutionRes
     """
     if run.intent not in SUPPORTED_INTENTS:
         raise ExecutionError(f"unknown intent: {run.intent!r}")
+    if run.status == RUN_STATUS_APPROVAL_REQUIRED:
+        raise ExecutionError(
+            f"run {run.id} requires an approval decision before execution"
+        )
+    if run.status == RUN_STATUS_DENIED:
+        raise ExecutionError(f"run {run.id} was denied by the guard chain")
     if run.status != RUN_STATUS_PLANNED:
         raise ExecutionError(
             f"run {run.id} is {run.status}, only PLANNED runs are executable"
+        )
+    blocked = [
+        name
+        for name, state in (
+            ("capability", run.capability_state),
+            ("spend_guard", run.spend_guard_state),
+            ("policy", run.policy_state),
+            ("lock", run.lock_state),
+            ("risk", run.risk_state),
+        )
+        if state not in GUARD_STATES_SATISFIED
+    ]
+    if blocked:
+        raise ExecutionError(
+            f"run {run.id} has unsatisfied guards: {', '.join(blocked)}"
         )
 
     decision_json = run.decision_json or {}
@@ -401,6 +548,7 @@ def execute_intent(db: DbSession, run: "ExecutionControllerRun") -> ExecutionRes
         EXECUTION_INTENT_POST_JOURNAL_ENTRY: execute_post_entry,
         EXECUTION_INTENT_INGEST_PROVIDER_EVENT: execute_ingest_provider_event,
         EXECUTION_INTENT_OUTBOX_FLUSH: execute_outbox_flush,
+        EXECUTION_INTENT_INVOKE_ADAPTER: execute_invoke_adapter,
     }[run.intent]
     try:
         result = handler(db, plan_obj)

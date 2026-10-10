@@ -369,6 +369,12 @@ def test_openapi_path_inventory(world):
         "/api/v1/approval-requests",
         "/api/v1/approval-requests/{request_id}/approve",
         "/api/v1/approval-requests/{request_id}/deny",
+        # V1A-4 execution adapters
+        "/api/v1/capabilities",
+        "/api/v1/spend-guard/budgets",
+        "/api/v1/spend-guard/decisions",
+        "/api/v1/execution-policies",
+        "/api/v1/adapters",
     }
     assert paths == expected, f"route inventory changed: {paths ^ expected}"
 
@@ -418,6 +424,18 @@ def test_every_protected_route_rejects_missing_token(world):
         ("POST", "/api/v1/approval-requests", None),
         ("POST", "/api/v1/approval-requests/some-id/approve", None),
         ("POST", "/api/v1/approval-requests/some-id/deny", None),
+        # V1A-4 execution adapters
+        ("GET", "/api/v1/capabilities", None),
+        ("POST", "/api/v1/capabilities",
+         {"provider_id": "p", "capability_id": "cap.x"}),
+        ("GET", "/api/v1/spend-guard/budgets", None),
+        ("POST", "/api/v1/spend-guard/budgets",
+         {"currency": "USD", "limit_amount": "10"}),
+        ("GET", "/api/v1/spend-guard/decisions", None),
+        ("GET", "/api/v1/execution-policies", None),
+        ("POST", "/api/v1/execution-policies",
+         {"intent": "invoke_adapter", "effect": "ALLOW"}),
+        ("GET", "/api/v1/adapters", None),
     ]
     for method, path, body in probes:
         r = httpx.request(method, f"{BASE}{path}", json=body, timeout=TIMEOUT)

@@ -27,7 +27,7 @@ services:
     no_docker_status: ENFORCED
 
   - service_id: api
-    version: "0.1.0+v1a0 (FastAPI 0.142.2 / uvicorn 0.54.0)"
+    version: "0.1.0+v1a4 (FastAPI 0.142.2 / uvicorn 0.54.0)"
     install_method: python venv .venv-api + uvicorn (scripts/start-services.sh)
     systemd_unit: revenueos-api.service (planned for Linux production)
     ports: ["127.0.0.1:8000"]
@@ -37,7 +37,7 @@ services:
     no_docker_status: ENFORCED
 
   - service_id: worker
-    version: "0.1.0+v1a0 (Celery 5.6.3)"
+    version: "0.1.0+v1a4 (Celery 5.6.3)"
     install_method: python venv .venv-worker + celery worker (scripts/start-services.sh). CELERY BEAT IS NEVER STARTED.
     systemd_unit: revenueos-worker.service (planned for Linux production)
     ports: []
@@ -47,7 +47,7 @@ services:
     no_docker_status: ENFORCED
 
   - service_id: scheduler
-    version: "0.1.0+v1a0 (APScheduler 3.11.3)"
+    version: "0.1.0+v1a4 (APScheduler 3.11.3)"
     install_method: python venv .venv-worker + python -m revenueos_scheduler.main (scripts/start-services.sh)
     systemd_unit: revenueos-scheduler.service (planned for Linux production; exactly ONE instance allowed)
     ports: []
@@ -57,7 +57,7 @@ services:
     no_docker_status: ENFORCED
 
   - service_id: web
-    version: "0.1.0+v1a0 (Next.js 16.4.0)"
+    version: "0.1.0+v1a4 (Next.js 16.4.0)"
     install_method: npm workspace + next build + next start (scripts/build-web.sh, scripts/start-services.sh)
     systemd_unit: revenueos-web.service (planned for Linux production)
     ports: ["0.0.0.0:3000"]

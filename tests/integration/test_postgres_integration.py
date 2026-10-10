@@ -28,6 +28,10 @@ EXPECTED_TABLES = {
     "approval_requests",
     "workflow_instances",
     "spend_guard_decisions",
+    # V1A-4 execution adapters
+    "provider_capabilities",
+    "spend_guard_budgets",
+    "execution_policies",
     "alembic_version",
 }
 
@@ -41,7 +45,7 @@ def test_database_connection():
 def test_migrations_applied_and_current():
     with get_engine().connect() as conn:
         version = conn.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-    assert version == "0005_execution"
+    assert version == "0006_execution_adapters"
 
 
 def test_exact_schema_inventory():

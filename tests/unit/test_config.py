@@ -12,7 +12,7 @@ def test_core_defaults():
     assert s.project_name == "RevenueOS"
     assert s.postgres_db == "revenueos_core"
     assert s.postgres_user == "revenueos"
-    assert s.phase == "V1A-3"
+    assert s.phase == "V1A-4"
     assert s.api_port == 8000
     assert s.web_port == 3000
 

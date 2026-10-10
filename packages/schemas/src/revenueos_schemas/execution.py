@@ -85,3 +85,72 @@ class WorkflowInstanceOut(BaseModel):
 class VerifyRequest(BaseModel):
     outcome: str = Field(min_length=1, max_length=32)
     detail: str | None = None
+
+
+# --------------------------------------------------------------------------
+# V1A-4 execution adapters (enforced guards)
+# --------------------------------------------------------------------------
+class CapabilityOut(BaseModel):
+    id: str
+    provider_id: str
+    capability_id: str
+    verification_state: str
+    enabled: bool
+    scope_json: dict | None = None
+    notes: str | None = None
+
+
+class CapabilityCreateRequest(BaseModel):
+    provider_id: str = Field(min_length=1, max_length=64)
+    capability_id: str = Field(min_length=1, max_length=128)
+    verification_state: str = Field(default="UNVERIFIED", max_length=32)
+    enabled: bool = False
+    scope: dict | None = None
+    notes: str | None = None
+
+
+class SpendBudgetOut(BaseModel):
+    id: str
+    tenant_id: str
+    provider_id: str | None = None
+    currency: str
+    period: str
+    limit_amount: str
+    enabled: bool
+    note: str | None = None
+
+
+class SpendBudgetCreateRequest(BaseModel):
+    currency: str = Field(min_length=3, max_length=3)
+    limit_amount: str = Field(min_length=1, max_length=32)
+    provider_id: str | None = Field(default=None, max_length=64)
+    period: str = Field(default="MONTHLY", max_length=16)
+    note: str | None = None
+
+
+class ExecutionPolicyOut(BaseModel):
+    id: str
+    tenant_id: str
+    intent: str
+    effect: str
+    requires_approval: bool
+    enabled: bool
+    note: str | None = None
+
+
+class ExecutionPolicyCreateRequest(BaseModel):
+    intent: str = Field(min_length=1, max_length=64)
+    effect: str = Field(default="DENY", max_length=16)
+    requires_approval: bool = False
+    note: str | None = None
+
+
+class AdapterOut(BaseModel):
+    adapter_id: str
+    capability_id: str
+    enabled: bool
+    registered: bool = True
+
+
+class ApprovalDecisionRequest(BaseModel):
+    note: str | None = Field(default=None, max_length=512)

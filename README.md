@@ -2,7 +2,7 @@
 
 Global, multi-tenant, AI-assisted revenue operating system.
 
-Phase status: **V1A-0 BOOTSTRAP** (see `docs/phase-status.md`).
+Phase status: **V1A-4 EXECUTION ADAPTERS** (see `docs/phase-status.md`).
 
 ## Layout
 

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "revenueos-execution-controller"
 version = "0.1.0"
-description = "RevenueOS execution authority: sole external side-effect state machine (V1A-3)"
+description = "RevenueOS execution authority: enforced guard chain + capability-gated provider adapters (V1A-4)"
 requires-python = ">=3.12"
 license = { text = "Proprietary" }
 dependencies = [

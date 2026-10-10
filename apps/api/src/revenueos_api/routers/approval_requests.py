@@ -1,18 +1,23 @@
-"""Approval requests surface (V1A-3). Deny-by-default.
+"""Approval requests surface (V1A-4).
 
-Read: any role with approval_request:read can list their tenant's approval
-requests. Create: record-only stub (TENANT_ADMIN-only via wildcard policy).
-Approve/deny: not implemented in V1A-3 — protected routes returning 501, so
-there is no unauthenticated path to influence an approval.
+Deny-by-default and terminal-once. Read requires approval_request:read; create
+and decisions require approval_request:write (TENANT_ADMIN via wildcard policy).
+An approved request linked to an execution run releases that run to PLANNED; a
+denied request parks the run as DENIED.
 """
 import logging
-import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 
+from revenueos_execution_controller.approval import (
+    ApprovalError,
+    create_approval_request,
+    decide_approval,
+    get_approval_request,
+)
 from revenueos_execution_controller.models import ApprovalRequest
-from revenueos_schemas.execution import ApprovalRequestOut
+from revenueos_schemas.execution import ApprovalDecisionRequest, ApprovalRequestOut
 from revenueos_shared.db import session_scope
 
 from revenueos_api.deps import Principal, permission
@@ -56,37 +61,60 @@ def list_approval_requests_route(
 def create_approval_request_route(
     request_type: str = Query(min_length=1, max_length=64),
     correlation_id: str = Query(min_length=1, max_length=36),
+    run_id: str | None = Query(default=None, max_length=36),
     principal: Principal = Depends(permission("approval_request", "write")),
 ) -> ApprovalRequestOut:
-    """Record-only stub. Real approval creation/decisions are deferred (V1A-4)."""
     with session_scope() as db:
-        req = ApprovalRequest(
-            id=uuid.uuid4().hex,
+        req = create_approval_request(
+            db,
             tenant_id=principal.tenant_id,
-            correlation_id=correlation_id,
-            request_type=request_type,
-            subject_json=None,
-            status="PENDING",
             requested_by=principal.user_id,
+            request_type=request_type,
+            correlation_id=correlation_id,
+            run_id=run_id,
         )
-        db.add(req)
-        db.flush()
         return _approval_out(req)
 
 
-@router.post("/{request_id}/approve", status_code=501)
+def _decide(
+    request_id: str,
+    decision: str,
+    note: str | None,
+    principal: Principal,
+) -> ApprovalRequestOut:
+    with session_scope() as db:
+        existing = get_approval_request(db, request_id, principal.tenant_id)
+        if existing is None:
+            raise HTTPException(status_code=404, detail="approval_request_not_found")
+        try:
+            req = decide_approval(
+                db,
+                request_id=request_id,
+                tenant_id=principal.tenant_id,
+                decided_by=principal.user_id,
+                decision=decision,
+                note=note,
+            )
+        except ApprovalError as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
+        return _approval_out(req)
+
+
+@router.post("/{request_id}/approve", response_model=ApprovalRequestOut)
 def approve_route(
     request_id: str,
+    payload: ApprovalDecisionRequest | None = None,
     principal: Principal = Depends(permission("approval_request", "write")),
-) -> dict:
-    """Not implemented in V1A-3 — the approval workflow is deferred."""
-    raise HTTPException(status_code=501, detail="approval workflow not implemented in V1A-3")
+) -> ApprovalRequestOut:
+    note = payload.note if payload else None
+    return _decide(request_id, "APPROVED", note, principal)
 
 
-@router.post("/{request_id}/deny", status_code=501)
+@router.post("/{request_id}/deny", response_model=ApprovalRequestOut)
 def deny_route(
     request_id: str,
+    payload: ApprovalDecisionRequest | None = None,
     principal: Principal = Depends(permission("approval_request", "write")),
-) -> dict:
-    """Not implemented in V1A-3 — the approval workflow is deferred."""
-    raise HTTPException(status_code=501, detail="approval workflow not implemented in V1A-3")
+) -> ApprovalRequestOut:
+    note = payload.note if payload else None
+    return _decide(request_id, "DENIED", note, principal)

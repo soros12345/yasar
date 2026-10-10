@@ -8,10 +8,12 @@ import pytest
 # shared fixtures and the integration inventory assertion see the full schema.
 import revenueos_identity.models  # noqa: F401
 import revenueos_authorization.models  # noqa: F401
+import revenueos_capabilities.models  # noqa: F401
 import revenueos_ledger.models  # noqa: F401
 import revenueos_execution_controller.models  # noqa: F401
 import revenueos_event_backbone.models  # noqa: F401
 import revenueos_spendguard.models  # noqa: F401
+import revenueos_execution_controller.policy  # noqa: F401
 import revenueos_workflow_state.models  # noqa: F401
 
 os.environ.setdefault("ENVIRONMENT", "test")

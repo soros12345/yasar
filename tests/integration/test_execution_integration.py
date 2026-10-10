@@ -73,6 +73,9 @@ def world():
         db.execute(delete(ApprovalRequest).where(ApprovalRequest.tenant_id.in_(tenants)))
         db.execute(text("DELETE FROM workflow_instances WHERE tenant_id = ANY(:t)"), {"t": tenants})
         db.execute(text("DELETE FROM spend_guard_decisions WHERE tenant_id = ANY(:t)"), {"t": tenants})
+        db.execute(text("DELETE FROM spend_guard_budgets WHERE tenant_id = ANY(:t)"), {"t": tenants})
+        db.execute(text("DELETE FROM execution_policies WHERE tenant_id = ANY(:t)"), {"t": tenants})
+        db.execute(text("DELETE FROM provider_capabilities WHERE capability_id LIKE 'itest-%'"))
         db.execute(text("SET LOCAL revenueos.allow_ledger_purge = 'on'"))
         db.execute(text(
             "DELETE FROM ledger_journal_lines WHERE entry_id IN "
@@ -179,7 +182,10 @@ def test_read_only_roles_cannot_write_execution(world):
 # --------------------------------------------------------------------------
 # decision/plan + ledger execution through the controller
 # --------------------------------------------------------------------------
-def test_decide_records_planned_run_with_unverified_guard_states(world):
+def test_decide_records_planned_run_with_enforced_guard_states(world):
+    """V1A-4: an internal intent is policy-ALLOWED; guards with no configured
+    authority are NOT_APPLICABLE, never a fabricated ALLOWED. The PostgreSQL
+    advisory lock is real, so the lock guard is ALLOWED."""
     admin = token(world, "slug_a", "admin")
     cid = new_cid("decide")
     r = decide(admin, "post_journal_entry", post_entry_payload(f"idem-{cid}"), cid)
@@ -188,11 +194,12 @@ def test_decide_records_planned_run_with_unverified_guard_states(world):
     assert body["status"] == "PLANNED"
     assert body["correlation_id"] == cid
     assert body["intent"] == "post_journal_entry"
-    guard_states = {
-        body["capability_state"], body["spend_guard_state"], body["policy_state"],
-        body["lock_state"], body["risk_state"], body["approval_state"],
-    }
-    assert guard_states == {"UNVERIFIED"}, "no authorization may be fabricated"
+    assert body["capability_state"] == "NOT_APPLICABLE"
+    assert body["policy_state"] == "ALLOWED"
+    assert body["spend_guard_state"] == "NOT_APPLICABLE"
+    assert body["lock_state"] == "ALLOWED"
+    assert body["risk_state"] == "NOT_APPLICABLE"
+    assert body["approval_state"] == "NOT_APPLICABLE"
     run_id = body["id"]
 
     r = httpx.get(f"{BASE}/api/v1/execution/runs/{run_id}", headers=auth(admin), timeout=TIMEOUT)
@@ -348,7 +355,7 @@ def test_outbox_pending_is_listed_then_flushed_by_the_controller(world):
 # --------------------------------------------------------------------------
 # approvals: deny-by-default, record-only, no decision path
 # --------------------------------------------------------------------------
-def test_approval_requests_deny_by_default_and_have_no_decision_path(world):
+def test_approval_requests_are_deny_by_default_and_terminal_once(world):
     admin = token(world, "slug_a", "admin")
     viewer = token(world, "slug_a", "viewer")
     cid = new_cid("approval")
@@ -366,16 +373,24 @@ def test_approval_requests_deny_by_default_and_have_no_decision_path(world):
     assert r.status_code == 200
     assert request_id in {a["id"] for a in r.json()}
 
-    # no approval decision exists in V1A-3; both paths are protected and 501
+    # decisions require authentication (deny-by-default)
+    r = httpx.post(f"{BASE}/api/v1/approval-requests/{request_id}/approve", timeout=TIMEOUT)
+    assert r.status_code == 401
+
+    # approve once: terminal
+    r = httpx.post(
+        f"{BASE}/api/v1/approval-requests/{request_id}/approve", headers=auth(admin), timeout=TIMEOUT
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "APPROVED"
+    # a second decision (either way) is rejected, never silently accepted
     for action in ("approve", "deny"):
         r = httpx.post(
             f"{BASE}/api/v1/approval-requests/{request_id}/{action}", headers=auth(admin), timeout=TIMEOUT
         )
-        assert r.status_code == 501, r.text
-        r = httpx.post(f"{BASE}/api/v1/approval-requests/{request_id}/{action}", timeout=TIMEOUT)
-        assert r.status_code == 401
+        assert r.status_code == 409, r.text
     with session_scope() as db:
-        assert db.get(ApprovalRequest, request_id).status == "PENDING"
+        assert db.get(ApprovalRequest, request_id).status == "APPROVED"
 
 
 # --------------------------------------------------------------------------
@@ -439,3 +454,178 @@ def test_cross_tenant_execution_isolation(world):
     # and B cannot execute A's run
     r = httpx.post(f"{BASE}/api/v1/execution/runs/{run_id}/execute", headers=auth(admin_b), timeout=TIMEOUT)
     assert r.status_code == 404
+
+
+# --------------------------------------------------------------------------
+# V1A-4: capability registry, policy, SpendGuard budgets, adapters, approvals
+# --------------------------------------------------------------------------
+def test_capability_registration_is_admin_only_and_deny_by_default(world):
+    admin = token(world, "slug_a", "admin")
+    viewer = token(world, "slug_a", "viewer")
+    op = token(world, "slug_a", "op")
+    cap_id = f"itest-cap-{world['suffix']}"
+
+    # write requires TENANT_ADMIN
+    for tok in (viewer, op):
+        r = httpx.post(
+            f"{BASE}/api/v1/capabilities", headers=auth(tok),
+            json={"provider_id": "itest", "capability_id": cap_id}, timeout=TIMEOUT,
+        )
+        assert r.status_code == 403, r.text
+
+    # admin registers it unverified/disabled (the default)
+    r = httpx.post(
+        f"{BASE}/api/v1/capabilities", headers=auth(admin),
+        json={"provider_id": "itest", "capability_id": cap_id}, timeout=TIMEOUT,
+    )
+    assert r.status_code == 201, r.text
+    assert r.json()["verification_state"] == "UNVERIFIED"
+    assert r.json()["enabled"] is False
+
+    # reads are allowed for read-only roles
+    r = httpx.get(f"{BASE}/api/v1/capabilities", headers=auth(viewer), timeout=TIMEOUT)
+    assert r.status_code == 200
+    assert cap_id in {c["capability_id"] for c in r.json()}
+
+
+def test_unverified_capability_denies_adapter_intent(world):
+    admin = token(world, "slug_a", "admin")
+    cid = new_cid("capdeny")
+    payload = {
+        "adapter_id": "awin_publisher",
+        "capability_id": "awin_publisher_redirect",
+        "operation": "publisher_redirect",
+    }
+    r = decide(admin, "invoke_adapter", payload, cid)
+    assert r.status_code == 201, r.text
+    body = r.json()
+    # the Awin capability is UNVERIFIED -> the guard is DENIED, not UNVERIFIED-usable
+    assert body["capability_state"] == "DENIED"
+    assert body["status"] == "DENIED"
+    # a denied run is not executable
+    ex = httpx.post(
+        f"{BASE}/api/v1/execution/runs/{body['id']}/execute", headers=auth(admin), timeout=TIMEOUT
+    )
+    assert ex.status_code == 409, ex.text
+
+
+def test_verified_capability_still_denied_without_policy_then_allowed_by_policy(world):
+    admin = token(world, "slug_a", "admin")
+    cap_id = f"itest-verified-{world['suffix']}"
+    r = httpx.post(
+        f"{BASE}/api/v1/capabilities", headers=auth(admin),
+        json={"provider_id": "itest", "capability_id": cap_id,
+              "verification_state": "VERIFIED", "enabled": True}, timeout=TIMEOUT,
+    )
+    assert r.status_code == 201, r.text
+
+    payload = {"adapter_id": "awin_publisher", "capability_id": cap_id, "operation": "publisher_redirect"}
+    cid = new_cid("capok")
+    body = decide(admin, "invoke_adapter", payload, cid).json()
+    # capability OK, but no policy grants invoke_adapter -> policy deny-by-default
+    assert body["capability_state"] == "ALLOWED"
+    assert body["policy_state"] == "DENIED"
+    assert body["status"] == "DENIED"
+
+    # grant the policy -> the run now plans
+    r = httpx.post(
+        f"{BASE}/api/v1/execution-policies", headers=auth(admin),
+        json={"intent": "invoke_adapter", "effect": "ALLOW"}, timeout=TIMEOUT,
+    )
+    assert r.status_code == 201, r.text
+    cid2 = new_cid("capok2")
+    body2 = decide(admin, "invoke_adapter", payload, cid2).json()
+    assert body2["policy_state"] == "ALLOWED"
+    assert body2["status"] == "PLANNED"
+    # the Awin adapter is still disabled -> execution is refused at the adapter boundary
+    ex = httpx.post(
+        f"{BASE}/api/v1/execution/runs/{body2['id']}/execute", headers=auth(admin), timeout=TIMEOUT
+    )
+    assert ex.status_code == 409, ex.text
+    assert "adapter" in ex.json()["detail"]
+
+
+def test_spend_budget_is_admin_only_and_denies_over_budget(world):
+    admin = token(world, "slug_a", "admin")
+    viewer = token(world, "slug_a", "viewer")
+    provider = f"itest-prov-{world['suffix']}"
+
+    r = httpx.post(
+        f"{BASE}/api/v1/spend-guard/budgets", headers=auth(viewer),
+        json={"currency": "USD", "limit_amount": "10", "provider_id": provider}, timeout=TIMEOUT,
+    )
+    assert r.status_code == 403, r.text
+
+    r = httpx.post(
+        f"{BASE}/api/v1/spend-guard/budgets", headers=auth(admin),
+        json={"currency": "USD", "limit_amount": "10", "provider_id": provider}, timeout=TIMEOUT,
+    )
+    assert r.status_code == 201, r.text
+
+    # a provider event that projects over budget denies the run
+    cid = new_cid("budget")
+    payload = {
+        "provider_id": provider, "currency": "USD", "amount": "99",
+        "cost_type": "api_call", "occurred_at": "2026-10-01T00:00:00+00:00",
+    }
+    body = decide(admin, "ingest_provider_event", payload, cid).json()
+    assert body["spend_guard_state"] == "DENIED"
+    assert body["status"] == "DENIED"
+
+
+def test_adapters_surface_reports_awin_disabled(world):
+    viewer = token(world, "slug_a", "viewer")
+    r = httpx.get(f"{BASE}/api/v1/adapters", headers=auth(viewer), timeout=TIMEOUT)
+    assert r.status_code == 200, r.text
+    awin = {a["adapter_id"]: a for a in r.json()}["awin_publisher"]
+    assert awin["enabled"] is False
+    assert awin["capability_id"] == "awin_publisher_redirect"
+
+
+def test_approval_gates_execution_run_and_releases_on_approve(world):
+    admin = token(world, "slug_a", "admin")
+    # a policy that requires approval for the internal post_journal_entry intent
+    r = httpx.post(
+        f"{BASE}/api/v1/execution-policies", headers=auth(admin),
+        json={"intent": "post_journal_entry", "effect": "ALLOW", "requires_approval": True},
+        timeout=TIMEOUT,
+    )
+    assert r.status_code == 201, r.text
+
+    cid = new_cid("apprgate")
+    body = decide(admin, "post_journal_entry", post_entry_payload(f"idem-{cid}"), cid).json()
+    assert body["approval_state"] == "REQUIRED"
+    assert body["status"] == "APPROVAL_REQUIRED"
+    run_id = body["id"]
+
+    # executing an approval-parked run is refused
+    ex = httpx.post(f"{BASE}/api/v1/execution/runs/{run_id}/execute", headers=auth(admin), timeout=TIMEOUT)
+    assert ex.status_code == 409, ex.text
+
+    # the run has a pending approval request linked to it
+    with session_scope() as db:
+        req = db.execute(
+            select(ApprovalRequest).where(ApprovalRequest.run_id == run_id)
+        ).scalar_one()
+        req_id = req.id
+        assert req.status == "PENDING"
+
+    r = httpx.post(
+        f"{BASE}/api/v1/approval-requests/{req_id}/approve", headers=auth(admin), timeout=TIMEOUT
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "APPROVED"
+
+    # the run is released to PLANNED and now executes
+    r = httpx.get(f"{BASE}/api/v1/execution/runs/{run_id}", headers=auth(admin), timeout=TIMEOUT)
+    assert r.json()["status"] == "PLANNED"
+    ex = httpx.post(f"{BASE}/api/v1/execution/runs/{run_id}/execute", headers=auth(admin), timeout=TIMEOUT)
+    assert ex.status_code == 200, ex.text
+    assert ex.json()["status"] == "SUCCEEDED"
+
+    # reset the policy so other tests see the internal default again
+    httpx.post(
+        f"{BASE}/api/v1/execution-policies", headers=auth(admin),
+        json={"intent": "post_journal_entry", "effect": "ALLOW", "requires_approval": False},
+        timeout=TIMEOUT,
+    )

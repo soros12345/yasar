@@ -91,6 +91,15 @@ class ApprovalRequest(Base):
         String(16), nullable=False, default=APPROVAL_STATUS_PENDING
     )
     requested_by: Mapped[str] = mapped_column(String(36), nullable=False)
+    # V1A-4: link an approval to the execution run it gates, and record the decision.
+    run_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("execution_controller_runs.id", ondelete="SET NULL"), nullable=True
+    )
+    decided_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    decided_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    decision_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     expires_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
@@ -102,4 +111,9 @@ class ApprovalRequest(Base):
         Index("ix_approval_requests_tenant_status", "tenant_id", "status"),
         Index("ix_approval_requests_correlation", "correlation_id"),
         Index("ix_approval_requests_tenant_type", "tenant_id", "request_type"),
+        Index("ix_approval_requests_run", "run_id"),
     )
+
+
+# register the policy table on Base.metadata with this package
+from revenueos_execution_controller import policy as _policy  # noqa: E402,F401

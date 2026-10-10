@@ -68,7 +68,7 @@ def test_plan_requires_intent_and_correlation(db):
         plan(db, ExecutionPlan(intent="post_journal_entry", correlation_id="", tenant_id="t1", user_id="u1", payload={}))
 
 
-def test_plan_execution_records_planned_run_with_payload_and_stub_states(db):
+def test_plan_execution_records_planned_run_with_payload_and_enforced_guards(db):
     payload = {"tenant_scoped": True}
     run = plan_execution(
         db, tenant_id="t1", user_id="u1", intent="outbox_flush", payload=payload, correlation_id="corr-plan-1"
@@ -77,21 +77,20 @@ def test_plan_execution_records_planned_run_with_payload_and_stub_states(db):
     assert run.correlation_id == "corr-plan-1"
     assert run.decision_json["payload"] == payload
     assert run.decision_json["user_id"] == "u1"
-    # every guard is recorded as UNVERIFIED: no fabricated authorization
-    assert {
-        run.capability_state,
-        run.spend_guard_state,
-        run.policy_state,
-        run.lock_state,
-        run.risk_state,
-        run.approval_state,
-    } == {"UNVERIFIED"}
+    # V1A-4 enforced guards: an internal intent is policy-ALLOWED; guards with no
+    # configured authority are NOT_APPLICABLE, never a fabricated ALLOWED.
+    assert run.capability_state == "NOT_APPLICABLE"
+    assert run.policy_state == "ALLOWED"
+    assert run.spend_guard_state == "NOT_APPLICABLE"
+    assert run.lock_state == "NOT_APPLICABLE"  # SQLite has no advisory locks
+    assert run.risk_state == "NOT_APPLICABLE"
+    assert run.approval_state == "NOT_APPLICABLE"
     assert len(db.execute(select(ExecutionControllerRun)).scalars().all()) == 1
     assert [e.event_type for e in _events(db, "corr-plan-1")] == ["execution.plan"]
-    # the SpendGuard hook-point recorded an auditable stub decision
+    # SpendGuard recorded why it was NOT_APPLICABLE (no budget configured)
     decisions = db.execute(select(SpendGuardDecision)).scalars().all()
     assert len(decisions) == 1
-    assert decisions[0].state == SPendGuardState_UNVERIFIED
+    assert decisions[0].state == "NOT_APPLICABLE"
 
 
 def test_execute_intent_rejects_unknown_and_non_planned_runs(db):

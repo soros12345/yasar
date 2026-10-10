@@ -61,5 +61,6 @@ def test_default_role_policies_shape():
         assert placeholder == "*"
         assert obj in ("*", "tenant", "user", "session", "ledger_account", "journal_entry", "provider_event",
                        "execution_controller_run", "execution_event", "approval_request", "outbox_event",
-                       "workflow_instance", "spend_guard_decision")
+                       "workflow_instance", "spend_guard_decision",
+                       "provider_capability", "spend_guard_budget", "execution_policy", "provider_adapter")
         assert act in ("*", "read", "write")

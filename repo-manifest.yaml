@@ -1,7 +1,7 @@
 # repo-manifest.yaml — RevenueOS source repositories (V1A-0)
 # Pinned exactly. No latest/main/HEAD/canary entries.
 manifest: repo
-phase: V1A-1 (V1A-0 delivered)
+phase: V1A-4 (V1A-0..V1A-3 delivered)
 generated: 2026-10-07
 
 repositories:
